@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:oklch(0.975 0.003 90);--surface:#fff;--ink:oklch(0.2 0.01 260);--muted:oklch(0.5 0.01 260);--line:oklch(0.91 0.004 260);--soft:oklch(0.95 0.004 260);--desk:oklch(0.9 0.004 260);--s1:oklch(0.93 0.004 260);--s2:oklch(0.9 0.004 260)}
+html,body{margin:0;background:var(--desk);font-family:'DM Sans',sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+a{color:var(--ink)}a:hover{color:var(--muted)}
+button{font-family:inherit;cursor:pointer}
+button:disabled{cursor:default}
+input{font-family:inherit}
+@keyframes hbPulse{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes hbIn{0%{transform:translateY(6px);opacity:0}100%{transform:none;opacity:1}}
+</style>
+</helmet>
+<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:32px 16px;box-sizing:border-box;background:var(--desk)">
+
+<sc-if value="{{ isPortrait }}" hint-placeholder-val="{{ true }}">
+<div data-screen-label="{{ screenLabel }}" style="width:390px;height:844px;border-radius:54px;border:10px solid #0b0b0e;box-sizing:content-box;background:var(--bg);position:relative;overflow:hidden;box-shadow:0 30px 80px -24px rgba(0,0,0,.3)">
+  <div style="height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 30px;font-weight:600;font-size:15px;color:var(--ink)">
+    <span>9:41</span><span style="width:110px;height:30px;background:#0b0b0e;border-radius:20px"></span><span style="font-size:12px">5G ▮▮▮</span>
+  </div>
+  <div style="position:absolute;top:46px;left:0;right:0;bottom:0;overflow-y:auto;overflow-x:hidden">
+
+  <!-- 01 START -->
+  <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+  <div style="padding:12px 20px 32px;display:flex;flex-direction:column;gap:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-weight:800;font-size:24px;letter-spacing:-0.02em">Handstand Battle</span>
+      <div style="display:flex;gap:8px">
+        <button onClick="{{ toggleTheme }}" title="Hell / Dunkel" style="width:44px;height:44px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:18px">◐</button>
+        <button onClick="{{ goSettings }}" title="Einstellungen" style="width:44px;height:44px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:20px">⚙︎</button>
+      </div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <span style="font-size:14px;font-weight:600;color:var(--muted)">Siege gesamt</span>
+        <span style="font-size:13px;font-weight:600;color:var(--muted)">{{ leaderText }}</span>
+      </div>
+      <sc-for list="{{ ranking }}" as="r" hint-placeholder-count="4">
+        <div style="display:grid;grid-template-columns:20px 36px minmax(0,1fr) auto;align-items:center;gap:10px">
+          <span style="font-size:13px;font-weight:600;color:var(--muted)">{{ r.rank }}</span>
+          <span style="width:36px;height:36px;border-radius:50%;background:{{ r.color }};color:{{ r.fg }};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px">{{ r.initial }}</span>
+          <div style="display:flex;flex-direction:column;gap:5px;min-width:0">
+            <span style="font-weight:600;font-size:16px">{{ r.name }}</span>
+            <div style="height:6px;border-radius:3px;background:var(--soft)"><div style="height:6px;border-radius:3px;background:{{ r.color }};width:{{ r.pct }}%"></div></div>
+          </div>
+          <span style="font-weight:800;font-size:{{ r.size }}px;line-height:1;font-variant-numeric:tabular-nums;min-width:48px;text-align:right">{{ r.wins }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <button onClick="{{ openLast }}" style="text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:16px 18px;color:var(--ink);display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
+        <span style="font-size:14px;font-weight:600;color:var(--muted)">Letztes Battle · {{ last.dateLabel }}</span>
+        <sc-if value="{{ last.unsaved }}"><span style="font-size:12px;font-weight:600;padding:3px 8px;border-radius:8px;background:var(--soft)">nicht gespeichert</span></sc-if>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="width:32px;height:32px;border-radius:50%;background:{{ last.color }};color:{{ last.fg }};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px">{{ last.initial }}</span>
+          <span style="font-weight:700;font-size:20px">{{ last.winnerText }}</span>
+        </div>
+        <span style="font-size:20px;color:var(--muted)">›</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;font-weight:500;color:var(--muted)">
+        <sc-for list="{{ last.chips }}" as="ch"><span style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:{{ ch.color }}"></span>{{ ch.name }} <b style="color:var(--ink)">Ø {{ ch.avg }}</b></span></sc-for>
+        <span>{{ last.count }} Handstände</span>
+      </div>
+    </button>
+    <button onClick="{{ goSetup }}" style="height:60px;border-radius:16px;border:none;background:var(--ink);color:var(--bg);font-weight:700;font-size:18px">Neues Battle</button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <button onClick="{{ goTraining }}" style="height:54px;border-radius:16px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-weight:600;font-size:16px">Training</button>
+      <button onClick="{{ goHistory }}" style="height:54px;border-radius:16px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-weight:600;font-size:16px">Verlauf</button>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- 02 SETUP -->
+  <sc-if value="{{ isSetup }}">
+  <div style="display:flex;flex-direction:column;min-height:100%">
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 20px 6px">
+      <button onClick="{{ goHome }}" style="width:44px;height:44px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:18px">←</button>
+      <span style="font-weight:700;font-size:22px">{{ setupTitle }}</span>
+    </div>
+    <div style="padding:10px 20px 20px;display:flex;flex-direction:column;gap:20px;flex:1">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <span style="font-size:14px;font-weight:600;color:var(--muted)">Wer macht mit?</span>
+          <span style="font-size:13px;font-weight:600;color:var(--muted)">{{ selCountText }}</span>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:18px;overflow:hidden">
+          <sc-for list="{{ rosterRows }}" as="p" hint-placeholder-count="4">
+            <div style="border-bottom:1px solid var(--line)">
+              <div style="display:flex;align-items:center;gap:12px;padding:10px 10px 10px 14px">
+                <button onClick="{{ p.onToggle }}" style="flex:1;min-width:0;display:flex;align-items:center;gap:12px;background:none;border:none;padding:0;color:var(--ink);text-align:left;height:44px">
+                  <span style="width:24px;height:24px;flex:none;border-radius:7px;border:2px solid {{ p.checkBorder }};background:{{ p.checkBg }};color:var(--bg);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;box-sizing:border-box">{{ p.check }}</span>
+                  <span style="width:38px;height:38px;flex:none;border-radius:50%;background:{{ p.color }};color:{{ p.fg }};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px">{{ p.initial }}</span>
+                  <span style="display:flex;flex-direction:column;min-width:0"><span style="font-weight:600;font-size:17px">{{ p.name }}</span><span style="font-size:12.5px;color:var(--muted)">{{ p.wins }} Siege</span></span>
+                </button>
+                <button onClick="{{ p.onEdit }}" title="Bearbeiten" style="width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:15px">✎</button>
+              </div>
+              <sc-if value="{{ p.editing }}">
+                <div style="padding:2px 14px 14px 50px;display:flex;flex-direction:column;gap:10px">
+                  <input value="{{ p.name }}" onChange="{{ p.onName }}" maxlength="12" style="height:42px;border-radius:12px;border:1px solid var(--line);background:var(--soft);color:var(--ink);font-size:16px;font-weight:600;padding:0 12px;outline:none">
+                  <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <sc-for list="{{ p.swatches }}" as="w"><button onClick="{{ w.onClick }}" disabled="{{ w.disabled }}" title="{{ w.label }}" style="width:30px;height:30px;border-radius:50%;background:{{ w.color }};border:none;outline:{{ w.ring }};outline-offset:2px;opacity:{{ w.op }}"></button></sc-for>
+                  </div>
+                  <div style="display:flex;justify-content:space-between">
+                    <button onClick="{{ p.onRemove }}" disabled="{{ p.cantRemove }}" style="background:none;border:none;padding:0;color:var(--muted);font-size:14px;font-weight:600;text-decoration:underline;opacity:{{ p.removeOp }}">Person entfernen</button>
+                    <button onClick="{{ p.onEdit }}" style="height:34px;padding:0 14px;border-radius:10px;border:none;background:var(--ink);color:var(--bg);font-size:14px;font-weight:600">Fertig</button>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+          <sc-if value="{{ adding }}">
+            <div style="padding:12px 14px 14px;display:flex;flex-direction:column;gap:10px">
+              <input value="{{ newName }}" onChange="{{ onNewName }}" placeholder="Name" maxlength="12" style="height:42px;border-radius:12px;border:1px solid var(--line);background:var(--soft);color:var(--ink);font-size:16px;font-weight:600;padding:0 12px;outline:none">
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <sc-for list="{{ newSwatches }}" as="w"><button onClick="{{ w.onClick }}" disabled="{{ w.disabled }}" title="{{ w.label }}" style="width:30px;height:30px;border-radius:50%;background:{{ w.color }};border:none;outline:{{ w.ring }};outline-offset:2px;opacity:{{ w.op }}"></button></sc-for>
+              </div>
+              <div style="display:flex;justify-content:flex-end;gap:8px">
+                <button onClick="{{ cancelAdd }}" style="height:38px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--ink);font-size:14px;font-weight:600">Abbrechen</button>
+                <button onClick="{{ confirmAdd }}" disabled="{{ cantAdd }}" style="height:38px;padding:0 14px;border-radius:10px;border:none;background:var(--ink);color:var(--bg);font-size:14px;font-weight:600;opacity:{{ addOp }}">Hinzufügen</button>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ notAdding }}">
+            <button onClick="{{ startAdd }}" style="width:100%;height:52px;background:none;border:none;color:var(--ink);font-size:15px;font-weight:600;display:flex;align-items:center;gap:10px;padding:0 14px">
+              <span style="width:24px;height:24px;border-radius:7px;border:1.5px dashed var(--muted);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--muted)">+</span>Person hinzufügen
+            </button>
+          </sc-if>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span style="font-size:14px;font-weight:600;color:var(--muted)">Wer fängt an?</span>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <sc-for list="{{ starterOpts }}" as="o" hint-placeholder-count="2">
+            <button onClick="{{ o.onClick }}" style="height:42px;padding:0 14px 0 6px;border-radius:21px;border:1.5px solid {{ o.border }};background:{{ o.bg }};color:var(--ink);font-weight:600;font-size:15px;display:flex;align-items:center;gap:8px">
+              <span style="width:30px;height:30px;border-radius:50%;background:{{ o.color }};color:{{ o.fg }};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">{{ o.initial }}</span>{{ o.name }}
+            </button>
+          </sc-for>
+        </div>
+        <span style="font-size:13px;color:var(--muted)">Reihenfolge: {{ orderText }}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span style="font-size:14px;font-weight:600;color:var(--muted)">Modus</span>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <sc-for list="{{ modeOpts }}" as="m" hint-placeholder-count="3">
+            <button onClick="{{ m.onClick }}" style="text-align:left;padding:12px 14px;border-radius:16px;border:1.5px solid {{ m.border }};background:var(--surface);color:var(--ink);display:flex;align-items:center;gap:12px">
+              <span style="width:20px;height:20px;flex:none;border-radius:50%;border:2px solid var(--ink);box-sizing:border-box;display:flex;align-items:center;justify-content:center"><span style="width:10px;height:10px;border-radius:50%;background:var(--ink);opacity:{{ m.dot }}"></span></span>
+              <span style="display:flex;flex-direction:column;gap:1px"><span style="font-weight:700;font-size:16px">{{ m.label }}</span><span style="font-size:13px;color:var(--muted)">{{ m.desc }}</span></span>
+            </button>
+          </sc-for>
+        </div>
+        <sc-if value="{{ isProfiMode }}"><button onClick="{{ goSettings }}" style="align-self:flex-start;background:none;border:none;padding:4px 0;color:var(--ink);font-weight:600;font-size:14px;text-decoration:underline">Gewichtung anpassen →</button></sc-if>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span style="font-size:14px;font-weight:600;color:var(--muted)">Kamera aufstellen</span>
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:12px">
+          <div style="position:relative;height:140px;border-radius:12px;background:var(--soft);overflow:hidden">
+            <div style="position:absolute;left:12px;right:12px;bottom:24px;height:2px;background:var(--muted)"></div>
+            <div style="position:absolute;left:30px;bottom:26px;width:40px;height:44px;border:2px solid var(--muted);border-bottom:none;box-sizing:border-box"></div>
+            <div style="position:absolute;left:34px;bottom:70px;width:32px;height:16px;border-radius:3px;background:var(--ink)"></div>
+            <div style="position:absolute;left:70px;right:96px;bottom:77px;border-top:2px dashed var(--muted)"></div>
+            <div style="position:absolute;left:0;right:20px;bottom:84px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)">3–4 m · seitlich</div>
+            <div style="position:absolute;left:8px;bottom:36px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);writing-mode:vertical-rl;transform:rotate(180deg)">≈ 1 m</div>
+            <div style="position:absolute;right:58px;bottom:44px;width:8px;height:80px;border-radius:4px;background:oklch(0.72 0.15 150)"></div>
+            <div style="position:absolute;right:53px;bottom:26px;width:18px;height:18px;border-radius:50%;border:3px solid oklch(0.72 0.15 150);box-sizing:border-box"></div>
+          </div>
+          <sc-for list="{{ guide }}" as="g" hint-placeholder-count="3">
+            <div style="display:flex;gap:10px;align-items:flex-start;font-size:14.5px;line-height:1.4">
+              <span style="flex:none;width:22px;height:22px;border-radius:50%;background:var(--soft);font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center">{{ g.n }}</span>
+              <span>{{ g.text }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+    <div style="position:sticky;bottom:0;padding:12px 20px 24px;background:var(--bg);border-top:1px solid var(--line)">
+      <button onClick="{{ startCamera }}" disabled="{{ cantStart }}" style="width:100%;height:58px;border-radius:16px;border:none;background:var(--ink);color:var(--bg);font-weight:700;font-size:17px;opacity:{{ startOp }}">{{ startLabel }}</button>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- 05 BATTLE-ENDE -->
+  <sc-if value="{{ isEnd }}">
+  <div style="display:flex;flex-direction:column;min-height:100%">
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 20px 6px">
+      <button onClick="{{ goHome }}" style="width:44px;height:44px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:18px">←</button>
+      <div style="display:flex;flex-direction:column">
+        <span style="font-weight:700;font-size:22px;line-height:1.1">{{ endTitle }}</span>
+        <span style="font-size:13px;color:var(--muted);font-weight:500">{{ endDate }}</span>
+      </div>
+    </div>
+    <div style="padding:10px 20px 20px;display:flex;flex-direction:column;gap:16px;flex:1">
+      <div style="background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:20px;display:flex;align-items:center;gap:16px;animation:hbIn .35s ease-out">
+        <span style="width:72px;height:72px;flex:none;border-radius:50%;background:{{ hero.color }};color:{{ hero.fg }};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:32px">{{ hero.initial }}</span>
+        <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
+          <span style="font-size:13px;font-weight:600;color:var(--muted)">{{ hero.kicker }}</span>
+          <span style="font-weight:800;font-size:38px;line-height:1;letter-spacing:-0.02em">{{ hero.title }}</span>
+          <span style="font-size:14.5px;color:var(--muted);font-weight:500">{{ hero.sub }}</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <sc-for list="{{ endStats }}" as="st" hint-placeholder-count="2">
+          <div style="background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:4px">
+            <span style="display:flex;align-items:center;gap:7px;font-weight:600;font-size:15px"><span style="width:10px;height:10px;border-radius:50%;background:{{ st.color }}"></span>{{ st.name }}</span>
+            <span style="font-weight:800;font-size:40px;line-height:1;font-variant-numeric:tabular-nums">Ø {{ st.avg }}</span>
+            <span style="font-size:13px;color:var(--muted)">Gesamt {{ st.total }} · {{ st.count }} gewertet</span>
+          </div>
+        </sc-for>
+      </div>
+      <sc-for list="{{ endLists }}" as="L" hint-placeholder-count="2">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="width:10px;height:10px;border-radius:50%;background:{{ L.color }}"></span>
+            <span style="font-weight:700;font-size:16px">{{ L.name }}</span>
+            <span style="font-size:13px;color:var(--muted)">{{ L.count }}</span>
+          </div>
+          <sc-for list="{{ L.rows }}" as="r">
+            <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column">
+              <div style="padding:8px 8px 8px 12px;display:flex;align-items:center;gap:10px">
+                <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);width:24px">#{{ r.n }}</span>
+                <span style="font-weight:800;font-size:26px;line-height:1;width:40px;font-variant-numeric:tabular-nums">{{ r.score }}</span>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;font-size:12.5px;line-height:1.3;color:var(--muted)">
+                  <span style="color:var(--ink);font-weight:500">{{ r.time }} s · {{ r.steps }}</span>
+                  <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.note }}</span>
+                </div>
+                <button onClick="{{ r.onSwapToggle }}" title="Andere Person zuordnen" style="width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:{{ r.swapBg }};color:var(--ink);font-size:15px">⇄</button>
+                <button onClick="{{ r.onVideo }}" disabled="{{ r.deleted }}" title="Video" style="width:40px;height:40px;border-radius:12px;border:none;background:var(--ink);color:var(--bg);font-size:13px;opacity:{{ r.vidOp }}">{{ r.vidIcon }}</button>
+              </div>
+              <sc-if value="{{ r.swapOpen }}">
+                <div style="padding:2px 12px 10px;display:flex;flex-wrap:wrap;align-items:center;gap:6px">
+                  <span style="font-size:13px;color:var(--muted);margin-right:2px">Zuordnen zu:</span>
+                  <sc-for list="{{ r.targets }}" as="tg"><button onClick="{{ tg.onClick }}" style="height:32px;padding:0 12px 0 6px;border-radius:16px;border:1px solid var(--line);background:var(--soft);color:var(--ink);font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:{{ tg.color }}"></span>{{ tg.name }}</button></sc-for>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </sc-for>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button onClick="{{ toggleWarm }}" style="display:flex;align-items:center;justify-content:space-between;background:transparent;border:1px dashed var(--muted);border-radius:14px;padding:12px 14px;color:var(--ink)">
+          <span style="font-weight:600;font-size:14.5px">Aufwärmen · {{ warmCount }} Videos · zählen nicht</span>
+          <span style="font-size:12px;color:var(--muted)">{{ warmChevron }}</span>
+        </button>
+        <sc-if value="{{ showWarm }}">
+          <sc-for list="{{ warmRows }}" as="r">
+            <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:8px 8px 8px 12px;display:flex;align-items:center;gap:10px">
+              <span style="width:10px;height:10px;border-radius:50%;background:{{ r.color }}"></span>
+              <span style="font-weight:600;font-size:15px;flex:1">{{ r.name }} · {{ r.time }} s <span style="color:var(--muted);font-weight:500">· Probe {{ r.score }}</span></span>
+              <button onClick="{{ r.onVideo }}" disabled="{{ r.deleted }}" style="width:40px;height:40px;border-radius:12px;border:none;background:var(--ink);color:var(--bg);font-size:13px;opacity:{{ r.vidOp }}">{{ r.vidIcon }}</button>
+            </div>
+          </sc-for>
+        </sc-if>
+      </div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.45">{{ storageNote }}</div>
+    </div>
+    <div style="position:sticky;bottom:0;padding:12px 20px 24px;background:var(--bg);border-top:1px solid var(--line)">
+      <button onClick="{{ saveBattle }}" style="width:100%;height:58px;border-radius:16px;border:none;background:var(--ink);color:var(--bg);font-weight:700;font-size:17px">{{ saveLabel }}</button>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- 06 VIDEO -->
+  <sc-if value="{{ isVideo }}">
+  <div style="display:flex;flex-direction:column;gap:14px;padding:10px 20px 28px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <button onClick="{{ backFromVideo }}" style="width:44px;height:44px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:18px">←</button>
+      <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+        <span style="font-weight:700;font-size:22px;line-height:1.1">Video-Analyse</span>
+        <span style="font-size:13px;color:var(--muted)">{{ vid.sub }}</span>
+      </div>
+      <button onClick="{{ toggleFav }}" style="height:44px;padding:0 14px;border-radius:14px;border:1px solid {{ vid.favBorder }};background:{{ vid.favBg }};color:{{ vid.favFg }};font-weight:600;font-size:14px;display:flex;align-items:center;gap:6px">{{ vid.star }} Favorit</button>
+    </div>
+    <div style="position:relative;aspect-ratio:16/9;border-radius:18px;overflow:hidden;background:repeating-linear-gradient(135deg,#1b1c21 0 10px,#1f2026 10px 20px)">
+      <div style="position:absolute;left:12px;bottom:10px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#8a8c96">aufgenommenes video · ohne ton</div>
+      <div style="position:absolute;inset:8px 0 6px;display:flex;justify-content:center">
+        <svg viewBox="0 0 200 300" style="height:100%;overflow:visible">
+          <sc-for list="{{ vidSk.bones }}" as="b"><line x1="{{ b.x1 }}" y1="{{ b.y1 }}" x2="{{ b.x2 }}" y2="{{ b.y2 }}" stroke="oklch(0.8 0.17 150)" stroke-width="6" stroke-linecap="round"></line></sc-for>
+          <circle cx="{{ vidSk.head.x }}" cy="{{ vidSk.head.y }}" r="14" fill="none" stroke="oklch(0.8 0.17 150)" stroke-width="5"></circle>
+          <sc-for list="{{ vidSk.joints }}" as="j"><circle cx="{{ j.x }}" cy="{{ j.y }}" r="7" fill="#fff" stroke="oklch(0.62 0.17 150)" stroke-width="3"></circle></sc-for>
+        </svg>
+      </div>
+      <div style="position:absolute;top:10px;left:10px;display:flex;gap:6px">
+        <span style="padding:4px 10px 4px 6px;border-radius:14px;background:rgba(0,0,0,.55);color:#fff;font-weight:600;font-size:14px;display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:{{ vid.color }}"></span>{{ vid.name }}</span>
+        <sc-if value="{{ vid.warm }}"><span style="padding:4px 10px;border-radius:14px;border:1px solid rgba(255,255,255,.6);color:#fff;font-weight:600;font-size:12.5px;display:flex;align-items:center">Aufwärmen</span></sc-if>
+      </div>
+      <sc-if value="{{ vid.errNow }}"><div style="position:absolute;top:10px;right:10px;padding:5px 10px;border-radius:10px;background:#fff;color:#111;font-weight:600;font-size:13px">⚠ {{ vid.errNow }}</div></sc-if>
+      <div style="position:absolute;right:12px;bottom:8px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#fff">{{ vid.tStr }} / {{ vid.durStr }} s</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <button onClick="{{ togglePlay }}" style="width:46px;height:46px;flex:none;border-radius:50%;border:none;background:var(--ink);color:var(--bg);font-size:16px">{{ vid.playIcon }}</button>
+      <div onClick="{{ seek }}" style="position:relative;flex:1;height:46px;cursor:pointer">
+        <div style="position:absolute;left:0;right:0;top:20px;height:6px;border-radius:3px;background:var(--soft)"></div>
+        <div style="position:absolute;left:0;top:20px;height:6px;border-radius:3px;background:var(--ink);width:{{ vid.pct }}%"></div>
+        <sc-for list="{{ vid.markers }}" as="mk"><div style="position:absolute;top:12px;left:{{ mk.left }}%;width:4px;height:22px;margin-left:-2px;border-radius:2px;background:oklch(0.62 0.17 35);pointer-events:none"></div></sc-for>
+        <div style="position:absolute;top:14px;left:{{ vid.pct }}%;width:18px;height:18px;margin-left:-9px;border-radius:50%;background:var(--surface);border:2.5px solid var(--ink);box-sizing:border-box;pointer-events:none"></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <span style="font-size:14px;font-weight:600;color:var(--muted)">Fehlermarkierungen</span>
+      <sc-if value="{{ vid.noErrors }}"><div style="font-size:14.5px;color:var(--muted);padding:6px 0">Keine Fehler erkannt – sauberer Handstand.</div></sc-if>
+      <sc-for list="{{ vid.errors }}" as="e">
+        <button onClick="{{ e.onClick }}" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;border:1px solid {{ e.border }};background:var(--surface);color:var(--ink);text-align:left">
+          <span style="width:8px;height:8px;border-radius:50%;background:oklch(0.62 0.17 35)"></span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--muted);width:62px">Sek. {{ e.t }}</span>
+          <span style="font-weight:600;font-size:15px;flex:1">{{ e.label }}</span>
+        </button>
+      </sc-for>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;gap:16px;align-items:center">
+      <div style="display:flex;flex-direction:column;align-items:center;width:80px;flex:none">
+        <span style="font-weight:800;font-size:54px;line-height:1">{{ vid.score }}</span>
+        <span style="font-size:12.5px;font-weight:600;color:var(--muted)">{{ vid.scoreLabel }}</span>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:7px">
+        <sc-for list="{{ vid.bars }}" as="br">
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <div style="display:flex;justify-content:space-between;font-size:12.5px;font-weight:500"><span>{{ br.label }}</span><span style="font-variant-numeric:tabular-nums;font-weight:600">{{ br.val }}</span></div>
+            <div style="height:5px;border-radius:3px;background:var(--soft)"><div style="height:5px;border-radius:3px;background:{{ vid.color }};width:{{ br.val }}%"></div></div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- 07 VERLAUF -->
+  <sc-if value="{{ isHistory }}">
+  <div style="display:flex;flex-direction:column;gap:14px;padding:10px 20px 28px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <button onClick="{{ goHome }}" style="width:44px;height:44px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:18px">←</button>
+      <span style="font-weight:700;font-size:22px">Verlauf</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:14px;background:var(--soft)">
+      <sc-for list="{{ histTabs }}" as="o" hint-placeholder-count="2">
+        <button onClick="{{ o.onClick }}" style="height:38px;border-radius:10px;border:none;background:{{ o.bg }};color:var(--ink);font-weight:600;font-size:14.5px;box-shadow:{{ o.shadow }}">{{ o.label }}</button>
+      </sc-for>
+    </div>
+    <sc-if value="{{ isTabDays }}" hint-placeholder-val="{{ true }}">
+      <div style="background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px 12px 10px;display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;flex-direction:column;gap:6px;padding:0 4px">
+          <span style="font-weight:600;font-size:15px">Fortschritt · Ø Punkte</span>
+          <div style="display:flex;flex-wrap:wrap;gap:4px 12px;font-size:13px;font-weight:500">
+            <sc-for list="{{ chart.legend }}" as="lg"><span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:3px;border-radius:2px;background:{{ lg.color }}"></span>{{ lg.name }}</span></sc-for>
+          </div>
+        </div>
+        <div style="position:relative">
+          <svg viewBox="0 0 320 178" style="width:100%;height:auto;display:block">
+            <sc-for list="{{ chart.grid }}" as="g"><line x1="26" x2="316" y1="{{ g.y }}" y2="{{ g.y }}" style="stroke:var(--line)" stroke-width="1"></line></sc-for>
+            <sc-for list="{{ chart.lines }}" as="ln"><polyline points="{{ ln.pts }}" fill="none" style="stroke:{{ ln.color }}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></polyline></sc-for>
+            <sc-for list="{{ chart.dots }}" as="pt"><circle cx="{{ pt.x }}" cy="{{ pt.y }}" r="3" style="fill:{{ pt.c }};stroke:var(--surface)" stroke-width="1.5"></circle></sc-for>
+          </svg>
+          <sc-for list="{{ chart.grid }}" as="g"><span style="position:absolute;left:0;top:{{ g.pct }}%;transform:translateY(-50%);font-size:11px;color:var(--muted)">{{ g.v }}</span></sc-for>
+          <span style="position:absolute;left:8.1%;bottom:0;font-size:11px;color:var(--muted)">{{ chart.first }}</span>
+          <span style="position:absolute;right:1.2%;bottom:0;font-size:11px;color:var(--muted)">{{ chart.lastD }}</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <sc-for list="{{ histRows }}" as="h" hint-placeholder-count="6">
+          <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 14px;display:grid;grid-template-columns:52px minmax(0,1fr);align-items:center;gap:12px">
+            <div style="display:flex;flex-direction:column;line-height:1.15"><span style="font-size:12px;color:var(--muted)">{{ h.wd }}</span><span style="font-weight:700;font-size:17px">{{ h.d }}</span></div>
+            <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+                <span style="display:flex;align-items:center;gap:6px;font-weight:600;font-size:15px"><span style="width:20px;height:20px;border-radius:50%;background:{{ h.color }};color:{{ h.fg }};font-size:10.5px;font-weight:700;display:flex;align-items:center;justify-content:center">{{ h.initial }}</span>{{ h.winner }}</span>
+                <span style="font-size:12.5px;color:var(--muted)">{{ h.count }} Handstände</span>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:4px 12px;font-size:13px;color:var(--muted)">
+                <sc-for list="{{ h.chips }}" as="ch"><span style="display:flex;align-items:center;gap:4px"><span style="width:7px;height:7px;border-radius:50%;background:{{ ch.color }}"></span>{{ ch.name }} <b style="color:var(--ink);font-variant-numeric:tabular-nums">{{ ch.avg }}</b></span></sc-for>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{ isTabGallery }}">
+      <div style="font-size:13.5px;color:var(--muted);line-height:1.45">Favoriten bleiben gespeichert. Alle anderen Videos werden nach dem Battle gelöscht.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <sc-for list="{{ gallery }}" as="g">
+          <button onClick="{{ g.onClick }}" style="padding:0;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--surface);color:var(--ink);text-align:left;display:flex;flex-direction:column">
+            <div style="position:relative;aspect-ratio:4/3;background:repeating-linear-gradient(135deg,var(--s1) 0 8px,var(--s2) 8px 16px);display:flex;align-items:center;justify-content:center">
+              <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)">video-vorschau</span>
+              <span style="position:absolute;top:6px;right:8px;font-size:16px;color:var(--ink)">★</span>
+              <sc-if value="{{ g.warm }}"><span style="position:absolute;top:8px;left:8px;padding:2px 6px;border-radius:6px;background:var(--surface);font-size:10.5px;font-weight:600">Aufwärmen</span></sc-if>
+            </div>
+            <div style="padding:8px 10px 10px;display:flex;justify-content:space-between;align-items:end">
+              <div style="display:flex;flex-direction:column"><span style="display:flex;align-items:center;gap:5px;font-weight:600;font-size:14px"><span style="width:8px;height:8px;border-radius:50%;background:{{ g.color }}"></span>{{ g.name }}</span><span style="font-size:12px;color:var(--muted)">{{ g.date }} · {{ g.time }} s</span></div>
+              <span style="font-weight:800;font-size:24px;line-height:1">{{ g.score }}</span>
+            </div>
+          </button>
+        </sc-for>
+      </div>
+      <sc-if value="{{ galleryEmpty }}"><div style="padding:30px 0;text-align:center;color:var(--muted)">Noch keine Favoriten.</div></sc-if>
+    </sc-if>
+  </div>
+  </sc-if>
+
+  <!-- 08 EINSTELLUNGEN -->
+  <sc-if value="{{ isSettings }}">
+  <div style="display:flex;flex-direction:column;gap:20px;padding:10px 20px 32px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <button onClick="{{ backFromSettings }}" style="width:44px;height:44px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:18px">←</button>
+      <span style="font-weight:700;font-size:22px">Einstellungen</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <span style="font-size:14px;font-weight:600;color:var(--muted)">Darstellung</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:14px;background:var(--soft)">
+        <sc-for list="{{ themeOpts }}" as="o" hint-placeholder-count="2">
+          <button onClick="{{ o.onClick }}" style="height:40px;border-radius:10px;border:none;background:{{ o.bg }};color:var(--ink);font-weight:600;font-size:14.5px;box-shadow:{{ o.shadow }}">{{ o.label }}</button>
+        </sc-for>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <span style="font-size:14px;font-weight:600;color:var(--muted)">Handschritte</span>
+      <div style="background:var(--surface);border:1px solid var(--line);border-radius:18px;overflow:hidden">
+        <sc-for list="{{ stepOpts }}" as="o" hint-placeholder-count="3">
+          <button onClick="{{ o.onClick }}" style="width:100%;display:flex;align-items:center;gap:12px;padding:14px;border:none;border-bottom:1px solid var(--line);background:transparent;color:var(--ink);text-align:left">
+            <span style="width:20px;height:20px;flex:none;border-radius:50%;border:2px solid var(--ink);box-sizing:border-box;display:flex;align-items:center;justify-content:center"><span style="width:10px;height:10px;border-radius:50%;background:var(--ink);opacity:{{ o.dot }}"></span></span>
+            <span style="display:flex;flex-direction:column;gap:2px"><span style="font-weight:600;font-size:15.5px">{{ o.label }}</span><span style="font-size:13px;color:var(--muted)">{{ o.desc }}</span></span>
+          </button>
+        </sc-for>
+        <sc-if value="{{ isAbzug }}">
+          <div style="padding:12px 14px 14px;display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:500"><span>Abzug pro Schritt</span><span style="font-weight:700;font-size:18px">−{{ penalty }}</span></div>
+            <input type="range" min="5" max="30" step="5" value="{{ penalty }}" onChange="{{ onPenalty }}" style="width:100%;accent-color:var(--ink)">
+          </div>
+        </sc-if>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <span style="font-size:14px;font-weight:600;color:var(--muted)">Strenge der Bewertung</span>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px;border-radius:14px;background:var(--soft)">
+        <sc-for list="{{ strictOpts }}" as="o" hint-placeholder-count="3">
+          <button onClick="{{ o.onClick }}" style="height:40px;border-radius:10px;border:none;background:{{ o.bg }};color:var(--ink);font-weight:600;font-size:14.5px;box-shadow:{{ o.shadow }}">{{ o.label }}</button>
+        </sc-for>
+      </div>
+      <span style="font-size:13px;color:var(--muted);line-height:1.45">{{ strictDesc }}</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <span style="font-size:14px;font-weight:600;color:var(--muted)">Profi-Gewichtung</span>
+        <span style="font-size:12.5px;color:var(--muted)">nur im Profi-Modus</span>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:12px">
+        <sc-for list="{{ weightRows }}" as="w" hint-placeholder-count="5">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-weight:600;font-size:15px">{{ w.label }}</span><span style="font-weight:700;font-size:16px;font-variant-numeric:tabular-nums">{{ w.share }} %</span></div>
+            <input type="range" min="0" max="50" step="5" value="{{ w.val }}" onChange="{{ w.onChange }}" style="width:100%;accent-color:var(--ink)">
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="background:var(--soft);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:6px;font-size:13.5px;line-height:1.45">
+      <span style="font-weight:600;font-size:15px">Speicher & Datenschutz</span>
+      <span>Videos werden ohne Ton aufgenommen und nur bis zum Ende des Battles zwischengespeichert. Favoriten ★ bleiben in der Galerie.</span>
+      <span style="color:var(--muted)">Dauerhaft gespeichert: nur Siegerliste und Verlauf.</span>
+    </div>
+  </div>
+  </sc-if>
+
+  </div>
+  <sc-if value="{{ toast }}"><div style="position:absolute;left:20px;right:20px;bottom:30px;padding:14px 16px;border-radius:14px;background:var(--ink);color:var(--bg);font-weight:500;font-size:14.5px;line-height:1.4;animation:hbIn .25s ease-out;box-shadow:0 10px 30px rgba(0,0,0,.2)">{{ toast }}</div></sc-if>
+</div>
+</sc-if>
+
+<!-- 03 KAMERA -->
+<sc-if value="{{ isCamera }}">
+<div data-screen-label="03 Kamera" style="width:844px;height:390px;border-radius:50px;border:10px solid #0b0b0e;box-sizing:content-box;position:relative;overflow:hidden;background:repeating-linear-gradient(135deg,#17181c 0 14px,#1b1c21 14px 28px);color:#fff;font-family:'DM Sans',sans-serif;box-shadow:0 30px 80px -24px rgba(0,0,0,.4)">
+  <div style="position:absolute;left:50%;bottom:14px;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;font-size:10px;color:#6c6e78">livebild kamera · ohne ton</div>
+  <div style="position:absolute;left:0;right:0;bottom:44px;height:2px;background:#2c2e35"></div>
+  <div style="position:absolute;left:300px;right:250px;top:18px;bottom:42px;display:flex;justify-content:center">
+    <svg viewBox="0 0 200 300" style="height:100%;overflow:visible">
+      <sc-for list="{{ camSk.bones }}" as="b"><line x1="{{ b.x1 }}" y1="{{ b.y1 }}" x2="{{ b.x2 }}" y2="{{ b.y2 }}" stroke="oklch(0.8 0.17 150)" stroke-width="6" stroke-linecap="round"></line></sc-for>
+      <circle cx="{{ camSk.head.x }}" cy="{{ camSk.head.y }}" r="14" fill="none" stroke="oklch(0.8 0.17 150)" stroke-width="5"></circle>
+      <sc-for list="{{ camSk.joints }}" as="j"><circle cx="{{ j.x }}" cy="{{ j.y }}" r="7" fill="#fff" stroke="oklch(0.62 0.17 150)" stroke-width="3"></circle></sc-for>
+    </svg>
+  </div>
+  <div style="position:absolute;left:44px;top:22px;bottom:20px;width:270px;display:flex;flex-direction:column;gap:4px">
+    <div style="align-self:flex-start;display:flex;align-items:center;gap:8px;padding:6px 14px;border-radius:20px;border:2px solid #fff;background:{{ cam.bannerBg }};color:{{ cam.bannerFg }};font-weight:700;font-size:20px">
+      <span style="width:10px;height:10px;border-radius:50%;background:{{ cam.dot }};animation:hbPulse 1.2s infinite"></span>{{ cam.banner }}
+    </div>
+    <span style="margin-top:10px;font-size:15px;font-weight:600;color:#a9abb5">Dran</span>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="width:18px;height:58px;border-radius:9px;background:{{ cam.color }};flex:none"></span>
+      <span style="font-weight:800;font-size:68px;line-height:.95;letter-spacing:-0.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ cam.name }}</span>
+    </div>
+    <div style="display:flex;align-items:baseline;gap:6px;margin-top:6px">
+      <span style="font-weight:800;font-size:104px;line-height:.9;font-variant-numeric:tabular-nums;letter-spacing:-0.03em">{{ cam.timer }}</span>
+      <span style="font-weight:600;font-size:32px;color:#a9abb5">s</span>
+    </div>
+    <span style="font-weight:600;font-size:22px;color:#d6d8e0">{{ cam.counter }} · {{ cam.phaseLabel }}</span>
+  </div>
+  <div style="position:absolute;right:40px;top:20px;bottom:20px;width:220px;display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+    <div style="display:flex;gap:8px;align-items:center">
+      <span style="display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#c9cbd3"><span style="width:8px;height:8px;border-radius:50%;background:#ff4b4b;animation:hbPulse 1.2s infinite"></span>REC</span>
+      <button onClick="{{ exitCamera }}" style="width:40px;height:40px;border-radius:12px;border:1px solid #3a3c46;background:rgba(0,0,0,.4);color:#fff;font-size:15px">✕</button>
+    </div>
+    <span style="margin-top:4px;font-size:14px;font-weight:600;color:#a9abb5">Ø aktuell</span>
+    <sc-for list="{{ cam.avgs }}" as="a" hint-placeholder-count="2">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="width:10px;height:10px;border-radius:50%;background:{{ a.color }}"></span>
+        <span style="font-weight:600;font-size:{{ cam.nameSize }}px;color:#e4e6ec">{{ a.name }}</span>
+        <span style="font-weight:800;font-size:{{ cam.avgSize }}px;line-height:1;font-variant-numeric:tabular-nums;min-width:56px;text-align:right">{{ a.avg }}</span>
+      </div>
+    </sc-for>
+    <div style="margin-top:auto;display:flex;flex-direction:column;align-items:flex-end">
+      <span style="font-size:14px;font-weight:600;color:#a9abb5">Als Nächstes</span>
+      <span style="display:flex;align-items:center;gap:10px;font-weight:800;font-size:38px;line-height:1.05"><span style="width:12px;height:12px;border-radius:50%;background:{{ cam.nextColor }}"></span>{{ cam.nextName }}</span>
+    </div>
+  </div>
+  <sc-if value="{{ cam.isWarm }}">
+    <button onClick="{{ startBattleNow }}" style="position:absolute;left:50%;bottom:22px;transform:translateX(-50%);height:58px;padding:0 28px;border-radius:18px;border:none;background:#fff;color:#111;font-weight:700;font-size:22px;box-shadow:0 8px 30px rgba(0,0,0,.5);white-space:nowrap">{{ cam.startLabel }}</button>
+  </sc-if>
+  <sc-if value="{{ cam.isLive }}">
+    <button onClick="{{ endBattle }}" style="position:absolute;left:50%;bottom:20px;transform:translateX(-50%);height:42px;padding:0 18px;border-radius:12px;border:1px solid #4a4c56;background:rgba(0,0,0,.5);color:#fff;font-weight:600;font-size:14.5px;white-space:nowrap">{{ cam.endLabel }}</button>
+  </sc-if>
+  <sc-if value="{{ cam.flash }}">
+    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;background:rgba(0,0,0,.35)"><span style="font-weight:800;font-size:96px;letter-spacing:-0.03em;color:#fff;animation:hbIn .3s ease-out">Los geht's</span></div>
+  </sc-if>
+  <sc-if value="{{ res.show }}">
+  <div onClick="{{ skipResult }}" style="position:absolute;inset:0;background:rgba(14,15,18,.95);display:flex;align-items:center;gap:40px;padding:0 56px;cursor:pointer;animation:hbIn .25s ease-out">
+    <div style="display:flex;flex-direction:column;align-items:center;width:240px;flex:none">
+      <span style="display:flex;align-items:center;gap:10px;font-weight:700;font-size:30px"><span style="width:14px;height:14px;border-radius:50%;background:{{ res.color }}"></span>{{ res.name }}</span>
+      <span style="font-weight:800;font-size:180px;line-height:.9;font-variant-numeric:tabular-nums;letter-spacing:-0.04em">{{ res.score }}</span>
+      <span style="font-weight:600;font-size:22px;color:#c9cbd3">{{ res.scoreLabel }}</span>
+      <sc-if value="{{ res.warm }}"><span style="margin-top:8px;padding:4px 12px;border-radius:14px;border:1.5px solid #fff;font-weight:600;font-size:14px">Aufwärmen · zählt nicht</span></sc-if>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;gap:9px">
+      <div style="display:flex;gap:24px;font-weight:700;font-size:28px">
+        <span>{{ res.time }} s</span><span style="color:#c9cbd3">{{ res.steps }}</span>
+      </div>
+      <sc-for list="{{ res.bars }}" as="br">
+        <div style="display:grid;grid-template-columns:120px 1fr 40px;align-items:center;gap:12px">
+          <span style="font-size:16px;font-weight:500;color:#d6d8e0">{{ br.label }}</span>
+          <div style="height:10px;border-radius:5px;background:#2a2c33"><div style="height:10px;border-radius:5px;background:{{ res.color }};width:{{ br.val }}%;opacity:{{ br.op }}"></div></div>
+          <span style="font-weight:700;font-size:19px;text-align:right">{{ br.txt }}</span>
+        </div>
+      </sc-for>
+      <sc-if value="{{ res.hasTips }}">
+        <div style="display:flex;flex-direction:column;gap:4px;margin-top:4px">
+          <sc-for list="{{ res.tips }}" as="tp"><span style="font-size:15px;line-height:1.35;color:#fff"><b>{{ tp.label }}:</b> <span style="color:#c9cbd3">{{ tp.tip }}</span></span></sc-for>
+        </div>
+      </sc-if>
+    </div>
+    <div style="position:absolute;left:0;bottom:0;height:4px;background:{{ res.color }};width:{{ res.left }}%"></div>
+  </div>
+  </sc-if>
+</div>
+<div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);text-align:center;max-width:600px;line-height:1.5">Handy quer · Erkennung läuft automatisch. Antippen der Einblendung überspringt sie.</div>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;},&quot;startScreen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;setup&quot;,&quot;camera&quot;,&quot;end&quot;,&quot;video&quot;,&quot;history&quot;,&quot;settings&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;simSpeed&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;1&quot;,&quot;2&quot;,&quot;4&quot;],&quot;default&quot;:&quot;1&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const PAL={rot:{c:'oklch(0.6 0.16 30)',fg:'#fff',l:'Rot'},blau:{c:'oklch(0.56 0.14 258)',fg:'#fff',l:'Blau'},gelb:{c:'oklch(0.82 0.14 88)',fg:'#1a1a1a',l:'Gelb'},lila:{c:'oklch(0.53 0.14 318)',fg:'#fff',l:'Lila'},rosa:{c:'oklch(0.76 0.11 355)',fg:'#1a1a1a',l:'Rosa'},braun:{c:'oklch(0.5 0.07 55)',fg:'#fff',l:'Braun'}};
+const THEMES={light:{bg:'oklch(0.975 0.003 90)',surface:'#ffffff',ink:'oklch(0.2 0.01 260)',muted:'oklch(0.5 0.01 260)',line:'oklch(0.91 0.004 260)',soft:'oklch(0.95 0.004 260)',desk:'oklch(0.9 0.004 260)',s1:'oklch(0.93 0.004 260)',s2:'oklch(0.9 0.004 260)'},
+  dark:{bg:'oklch(0.17 0.006 260)',surface:'oklch(0.22 0.007 260)',ink:'oklch(0.95 0.003 90)',muted:'oklch(0.7 0.008 260)',line:'oklch(0.3 0.008 260)',soft:'oklch(0.27 0.008 260)',desk:'oklch(0.11 0.005 260)',s1:'oklch(0.26 0.007 260)',s2:'oklch(0.23 0.007 260)'}};
+const SUBS=[['zeit','Haltezeit'],['linie','Körperlinie'],['beine','Beine'],['ruhe','Ruhe'],['schritte','Handschritte']];
+const W={battle:{zeit:30,linie:20,beine:20,ruhe:15,schritte:15},training:{zeit:0,linie:35,beine:30,ruhe:20,schritte:15}};
+const TIPS={'Hüfte knickt ab':'Po und Bauch fest anspannen, Hüfte genau über die Schultern.','Hohlkreuz':'Rippen einziehen, Becken leicht einrollen.','Beine auseinander':'Beine fest zusammendrücken – wie ein Blatt Papier dazwischen.','Knie gebeugt':'Knie durchdrücken, Zehen aktiv zur Decke strecken.','Starkes Wackeln':'Finger in den Boden krallen, um das Gleichgewicht abzufangen.','Handschritt':'Schultern ganz nach oben schieben, Blick zwischen die Hände.'};
+const SKILL={lena:0.8,mia:0.77,jonas:0.7,emil:0.68};
+const WD=['So','Mo','Di','Mi','Do','Fr','Sa'],MON=['Jan.','Feb.','März','Apr.','Mai','Juni','Juli','Aug.','Sep.','Okt.','Nov.','Dez.'];
+const rngF=seed=>()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+const clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,v));
+const f1=v=>(Math.round(v*10)/10).toFixed(1).replace('.',',');
+const dShort=d=>`${d.getDate()}.${d.getMonth()+1}.`;
+const dLong=d=>`${WD[d.getDay()]}, ${d.getDate()}. ${MON[d.getMonth()]}`;
+let AID=1;
+function scoreOf(sub,mode,set){const w=mode==='profi'?set.weights:(W[mode]||W.battle);let s=0,ws=0;for(const[k]of SUBS){s+=w[k]*sub[k];ws+=w[k];}const r=ws?s/ws:0;const ex=[0.8,1,1.3][set.strict-1]*(mode==='profi'?1.25:1);return Math.round(100*Math.pow(r/100,ex));}
+function gen(rng,pid,warm,mode,set,date,timeOv){
+  const skill=(SKILL[pid]||0.7)-(warm?0.07:0);
+  let time=timeOv!=null?timeOv:Math.round((3+rng()*8*skill)*10)/10;
+  let steps=rng()<0.45?0:1+Math.floor(rng()*2.4);
+  const v=()=>Math.round(clamp(skill*100+(rng()-0.45)*34,30,99));
+  const sub={linie:v(),beine:v(),ruhe:v()};
+  const at=()=>Math.round((0.8+rng()*Math.max(0.6,time-1.4))*10)/10;
+  let errors=[];
+  if(sub.linie<74)errors.push({t:at(),label:rng()<0.5?'Hüfte knickt ab':'Hohlkreuz'});
+  if(sub.beine<76)errors.push({t:at(),label:rng()<0.6?'Beine auseinander':'Knie gebeugt'});
+  if(sub.ruhe<72)errors.push({t:at(),label:'Starkes Wackeln'});
+  for(let i=0;i<steps;i++)errors.push({t:at(),label:'Handschritt'});
+  errors.sort((a,b)=>a.t-b.t);
+  if(set.stepRule==='ende'&&steps>0){const st=errors.find(e=>e.label==='Handschritt');time=st.t;errors=errors.filter(e=>e.t<=st.t);steps=1;}
+  sub.zeit=Math.round(clamp(time*10));
+  sub.schritte=set.stepRule==='abzug'?clamp(100-steps*set.penalty):100;
+  return {id:AID++,player:pid,warm,time,steps,sub,errors,mode,date,score:scoreOf(sub,mode,set)};
+}
+const DEF_SET={stepRule:'abzug',penalty:10,strict:2,weights:{zeit:25,linie:25,beine:20,ruhe:20,schritte:10}};
+function seedData(){
+  const rng=rngF(23),today=new Date(2026,9,23),pl=['lena','mia'];
+  const atts=[gen(rng,'lena',true,'battle',DEF_SET,today),gen(rng,'mia',true,'battle',DEF_SET,today)];
+  for(let i=0;i<7;i++)atts.push(gen(rng,pl[i%2],false,'battle',DEF_SET,today));
+  const offs=[19,17,16,14,13,12,10,9,7,6,5,3,2,1],hr=rngF(7);
+  const base={lena:[58,1.6],mia:[54,1.9],jonas:[50,1.2],emil:[46,1.5]};
+  const history=offs.map((o,i)=>{const ps=['lena','mia'];if(i%4===2)ps.push('jonas');if(i===9||i===13)ps.push('emil');
+    const avg={};ps.forEach(p=>avg[p]=Math.round(base[p][0]+i*base[p][1]+(hr()-0.5)*10));
+    const best=Math.max(...ps.map(p=>avg[p])),top=ps.filter(p=>avg[p]===best);
+    return {date:new Date(2026,9,23-o),players:ps,avg,winner:top.length>1?null:top[0],count:5+Math.floor(hr()*4)};});
+  const fr=rngF(41);
+  const favs=[gen(fr,'mia',false,'battle',DEF_SET,new Date(2026,9,20),9.4),gen(fr,'lena',true,'battle',DEF_SET,new Date(2026,9,14),6.1)];
+  return {battle:{mode:'battle',players:pl,order:pl,attempts:atts,saved:false,videosDeleted:false,date:today},history,favorites:favs};
+}
+function pose(kind,o){
+  o=o||{};let J;
+  if(kind==='stand'){const sw=o.sw||0;J={h0:[92+sw,40],h1:[108+sw,40],sh:[100+sw*.7,112],hip:[100+sw*.4,182],k0:[95,236],k1:[105,236],f0:[93,290],f1:[107,290],head:[100+sw*.7,86]};}
+  else{const sw=o.sw||0,ar=o.arch||0,sp=o.split||0,kb=o.knee||0,hs=o.hs||0;
+    J={h0:[92+hs,290],h1:[110+hs,290],sh:[101+sw*.25,212],head:[110+sw*.25,246],hip:[101+sw*.6+ar,138],k0:[101+sw*.8+ar*.4-sp*.5-kb,84],k1:[101+sw*.8+ar*.4+sp*.5-kb*.6,84],f0:[101+sw-sp-ar*.3,30],f1:[101+sw+sp-ar*.3,30]};}
+  const L=(a,b)=>({x1:J[a][0],y1:J[a][1],x2:J[b][0],y2:J[b][1]});
+  return {bones:[L('h0','sh'),L('h1','sh'),L('sh','hip'),L('hip','k0'),L('k0','f0'),L('hip','k1'),L('k1','f1')],
+    joints:['h0','h1','sh','hip','k0','k1','f0','f1'].map(k=>({x:J[k][0],y:J[k][1]})),head:{x:J.head[0],y:J.head[1]}};
+}
+class Component extends DCLogic {
+  constructor(p){super(p);const d=seedData();
+    this.state={screen:p.startScreen||'home',theme:p.theme||'light',
+      roster:[{id:'lena',name:'Lena',color:'rot'},{id:'mia',name:'Mia',color:'blau'},{id:'jonas',name:'Jonas',color:'gelb'},{id:'emil',name:'Emil',color:'lila'}],
+      wins:{lena:12,mia:9,jonas:2,emil:1},history:d.history,battle:d.battle,favorites:d.favorites,set:JSON.parse(JSON.stringify(DEF_SET)),
+      setup:{sel:['lena','mia'],starter:'lena',mode:'battle'},editing:null,adding:false,newName:'',newColor:'rosa',
+      cam:null,video:null,histTab:'tage',showWarm:false,swapOpen:null,toast:null,settingsBack:'home',prevBattle:null};
+    this.rng=rngF(99);
+    if(this.state.screen==='camera')this.state.cam={phase:'ready',t:0,turn:0,warm:true};
+    if(this.state.screen==='video')this.state.video={id:d.battle.attempts[4].id,t:1.2,playing:false,back:'end'};
+  }
+  componentDidMount(){this.applyVars();this.iv=setInterval(()=>this.tick(),100);}
+  componentWillUnmount(){clearInterval(this.iv);clearTimeout(this.tt);}
+  componentDidUpdate(pp,ps){
+    if(pp.theme!==this.props.theme&&this.props.theme)this.setState({theme:this.props.theme});
+    if(pp.startScreen!==this.props.startScreen&&this.props.startScreen)this.go(this.props.startScreen);
+    if(ps.theme!==this.state.theme)this.applyVars();
+  }
+  applyVars(){const r=document.documentElement,t=THEMES[this._appliedTheme||this.state.theme]||THEMES.light;for(const k in t)r.style.setProperty('--'+k,t[k]);r.style.colorScheme=this.state.theme;}
+  go(screen){const up={screen};
+    if(screen==='camera'&&!this.state.cam)up.cam={phase:'ready',t:0,turn:0,warm:true};
+    if(screen==='video'&&!this.state.video)up.video={id:this.state.battle.attempts[0].id,t:0,playing:false,back:'end'};
+    this.setState(up);}
+  toast(msg){clearTimeout(this.tt);this.setState({toast:msg});this.tt=setTimeout(()=>this.setState({toast:null}),3800);}
+  find(id){const s=this.state;return s.battle.attempts.find(a=>a.id===id)||s.favorites.find(a=>a.id===id);}
+  tick(){
+    const s=this.state,dt=0.1*Number(this.props.simSpeed||1);
+    if(s.screen==='camera'&&s.cam){
+      const c={...s.cam},ord=s.battle.order;c.t+=dt;if(c.flash)c.flash=Math.max(0,c.flash-dt);
+      if(c.phase==='ready'&&c.t>=2.4){c.phase='active';c.t=0;c.target=Math.round((3+this.rng()*7)*10)/10;c.attWarm=c.warm;}
+      else if(c.phase==='active'&&c.t>=c.target){
+        const a=gen(this.rng,ord[c.turn%ord.length],c.attWarm,s.battle.mode,s.set,s.battle.date,c.target);
+        c.phase='result';c.t=0;c.last=a.id;
+        this.setState({cam:c,battle:{...s.battle,attempts:[...s.battle.attempts,a]}});return;
+      }else if(c.phase==='result'&&c.t>=4.5){c.phase='ready';c.t=0;c.turn++;}
+      this.setState({cam:c});
+    }
+    if(s.screen==='video'&&s.video&&s.video.playing){
+      const a=this.find(s.video.id);if(!a)return;const dur=a.time+1.6;let t=s.video.t+dt,pl=true;
+      if(t>=dur){t=dur;pl=false;}this.setState({video:{...s.video,t,playing:pl}});
+    }
+  }
+  renderVals(){
+    const s=this.state,R=s.roster,set=s.set,b=s.battle;
+    if(this._appliedTheme!==s.theme){this._appliedTheme=s.theme;this.applyVars();setTimeout(()=>this.applyVars(),0);}
+    const P=id=>R.find(p=>p.id===id)||{id,name:'?',color:'braun'};
+    const nm=id=>P(id).name,col=id=>(PAL[P(id).color]||PAL.braun).c,fgc=id=>(PAL[P(id).color]||PAL.braun).fg,ini=id=>(nm(id)[0]||'?').toUpperCase();
+    const counted=b.attempts.filter(a=>!a.warm);
+    const per={},avg={},tot={};
+    b.players.forEach(id=>{per[id]=counted.filter(a=>a.player===id);avg[id]=per[id].length?Math.round(per[id].reduce((x,a)=>x+a.score,0)/per[id].length):0;tot[id]=per[id].reduce((x,a)=>x+a.score,0);});
+    const isTr=b.mode==='training';
+    const scored=b.players.filter(id=>per[id].length);
+    let winner=null,tie=false;
+    if(!isTr&&scored.length){const best=Math.max(...scored.map(id=>avg[id])),top=scored.filter(id=>avg[id]===best);if(top.length>1)tie=true;else winner=top[0];}
+    const isFav=id=>s.favorites.some(f=>f.id===id);
+    const seg=(cur,opts)=>opts.map(([v,label,fn])=>({label,onClick:fn,bg:cur===v?'var(--surface)':'transparent',shadow:cur===v?'0 1px 3px rgba(0,0,0,.12)':'none'}));
+    const setSet=patch=>this.setState(st=>({set:{...st.set,...patch}}));
+    const labels={home:'01 Start',setup:'02 Battle vorbereiten',end:'05 Battle-Ende',video:'06 Video-Analyse',history:'07 Verlauf',settings:'08 Einstellungen'};
+    // start
+    const maxW=Math.max(1,...R.map(p=>s.wins[p.id]||0));
+    const ranking=[...R].sort((a,c)=>(s.wins[c.id]||0)-(s.wins[a.id]||0)).map((p,i)=>({rank:i+1,name:p.name,initial:ini(p.id),color:col(p.id),fg:fgc(p.id),wins:s.wins[p.id]||0,pct:(s.wins[p.id]||0)/maxW*100,size:i===0?40:28}));
+    const lead=ranking.length>1?ranking[0].wins-ranking[1].wins:0;
+    const leaderText=lead===0?'Gleichstand an der Spitze':`${ranking[0].name} führt mit ${lead}`;
+    const lh=s.history[s.history.length-1];
+    const lsrc=!b.saved&&counted.length?{label:'Heute',unsaved:true,players:b.players,avg,count:counted.length,w:winner}:{label:dLong(lh.date),unsaved:false,players:lh.players,avg:lh.avg,count:lh.count,w:lh.winner};
+    const last={dateLabel:lsrc.label,unsaved:lsrc.unsaved,count:lsrc.count,color:lsrc.w?col(lsrc.w):'var(--soft)',fg:lsrc.w?fgc(lsrc.w):'var(--ink)',initial:lsrc.w?ini(lsrc.w):'=',winnerText:lsrc.w?`${nm(lsrc.w)} gewinnt`:'Unentschieden',
+      chips:lsrc.players.map(id=>({name:nm(id),color:col(id),avg:lsrc.avg[id]}))};
+    // setup
+    const used=id=>R.filter(p=>p.id!==id).map(p=>p.color);
+    const sw=(cur,taken,fn)=>Object.keys(PAL).map(k=>{const dis=taken.includes(k)&&taken.length<6;return {color:PAL[k].c,label:PAL[k].l,disabled:dis,op:dis?0.2:1,ring:cur===k?'2.5px solid var(--ink)':'2.5px solid transparent',onClick:()=>fn(k)};});
+    const upd=(id,patch)=>this.setState(st=>({roster:st.roster.map(q=>q.id===id?{...q,...patch}:q)}));
+    const sel=s.setup.sel;
+    const rosterRows=R.map(p=>{const on=sel.includes(p.id);return {name:p.name,initial:ini(p.id),color:col(p.id),fg:fgc(p.id),wins:s.wins[p.id]||0,
+      check:on?'✓':'',checkBg:on?'var(--ink)':'transparent',checkBorder:on?'var(--ink)':'var(--muted)',
+      onToggle:()=>this.setState(st=>{const cur=st.setup.sel;const ns=cur.includes(p.id)?cur.filter(x=>x!==p.id):st.roster.map(q=>q.id).filter(x=>cur.includes(x)||x===p.id);
+        return {setup:{...st.setup,sel:ns,starter:ns.includes(st.setup.starter)?st.setup.starter:(ns[0]||null)}};}),
+      editing:s.editing===p.id,onEdit:()=>this.setState(st=>({editing:st.editing===p.id?null:p.id,adding:false})),
+      onName:e=>upd(p.id,{name:e.target.value}),swatches:sw(p.color,used(p.id),k=>upd(p.id,{color:k})),
+      cantRemove:R.length<=2,removeOp:R.length<=2?0.4:1,
+      onRemove:()=>this.setState(st=>{const ns=st.setup.sel.filter(x=>x!==p.id);return {roster:st.roster.filter(q=>q.id!==p.id),editing:null,setup:{...st.setup,sel:ns,starter:ns.includes(st.setup.starter)?st.setup.starter:(ns[0]||null)}};})};});
+    const freeColor=Object.keys(PAL).find(k=>!R.some(p=>p.color===k))||'braun';
+    const newColor=R.some(p=>p.color===s.newColor)&&R.length<6?freeColor:s.newColor;
+    const order=(()=>{const i=sel.indexOf(s.setup.starter);return i<0?sel:[...sel.slice(i),...sel.slice(0,i)];})();
+    const starterOpts=sel.map(id=>{const on=s.setup.starter===id;return {name:nm(id),initial:ini(id),color:col(id),fg:fgc(id),border:on?'var(--ink)':'var(--line)',bg:on?'var(--surface)':'transparent',onClick:()=>this.setState(st=>({setup:{...st.setup,starter:id}}))};});
+    const modeOpts=[['battle','Battle','Zeit und Form zählen – am Ende gibt es einen Tagessieg.'],['training','Training','Nur die Form zählt, dazu Verbesserungstipps.'],['profi','Profi','Eigene Gewichtung, strengere Bewertung.']].map(([v,label,desc])=>{const on=s.setup.mode===v;return {label,desc,dot:on?1:0,border:on?'var(--ink)':'var(--line)',onClick:()=>this.setState(st=>({setup:{...st.setup,mode:v}}))};});
+    // camera
+    const c=s.cam||{phase:'ready',t:0,turn:0,warm:true},ord=b.order&&b.order.length?b.order:b.players;
+    const cur=ord[c.turn%ord.length],nx=ord[(c.turn+1)%ord.length],lastA=c.last?this.find(c.last):null;
+    const camSk=c.phase==='active'?pose('hand',{sw:Math.sin(c.t*2.3)*6+Math.sin(c.t*5.1)*2,arch:Math.max(0,Math.sin(c.t*0.9))*6,split:Math.max(0,Math.sin(c.t*1.3+1))*6}):pose('stand',{sw:Math.sin(c.t*1.5)*3});
+    const timer=c.phase==='active'?c.t:c.phase==='result'&&lastA?lastA.time:0;
+    const warmN=b.attempts.filter(a=>a.warm).length+(c.phase==='active'&&c.attWarm?1:0);
+    const liveN=counted.length+(c.phase==='active'&&!c.attWarm?1:0);
+    const curIsWarm=c.phase==='active'?c.attWarm:c.warm,np=b.players.length;
+    const cam={name:nm(cur),color:col(cur),nextName:nm(nx),nextColor:col(nx),timer:f1(timer),isWarm:c.warm,isLive:!c.warm,flash:!!c.flash,
+      banner:c.warm?'Aufwärmen · zählt nicht':(isTr?'Training läuft':'Battle läuft'),bannerBg:c.warm?'transparent':'#fff',bannerFg:c.warm?'#fff':'#111',dot:c.warm?'#fff':'#e5484d',
+      startLabel:isTr?'Training startet jetzt':'Battle startet jetzt',endLabel:isTr?'Training beenden':'Battle beenden',
+      counter:curIsWarm?`Probe ${Math.max(1,warmN)}`:`Handstand ${Math.max(1,liveN)}`,phaseLabel:c.phase==='ready'?'in Position':c.phase==='active'?'hält':'gewertet',
+      avgSize:np<=2?52:np===3?40:32,nameSize:np<=2?22:18,avgs:b.players.map(id=>({name:nm(id),color:col(id),avg:per[id].length?avg[id]:'–'}))};
+    const res={show:c.phase==='result'&&!!lastA};
+    if(res.show){const a=lastA;Object.assign(res,{name:nm(a.player),color:col(a.player),score:a.score,warm:a.warm,time:f1(a.time),
+      scoreLabel:isTr?'Form-Punkte':'Punkte',steps:a.steps===0?'keine Handschritte':a.steps===1?'1 Handschritt':`${a.steps} Handschritte`,
+      bars:SUBS.map(([k,l])=>{const off=isTr&&k==='zeit';return {label:l,val:a.sub[k],txt:off?'–':a.sub[k],op:off?0.25:1};}),left:Math.max(0,100-c.t/4.5*100)});
+      const u=[...new Set(a.errors.map(e=>e.label))].slice(0,2);res.tips=u.map(l=>({label:l,tip:TIPS[l]}));res.hasTips=isTr&&u.length>0;}
+    // end
+    const bestTr=scored.length?scored.reduce((x,id)=>avg[id]>avg[x]?id:x,scored[0]):null;
+    const hero=isTr?{color:bestTr?col(bestTr):'var(--soft)',fg:bestTr?fgc(bestTr):'var(--ink)',initial:bestTr?ini(bestTr):'–',kicker:'Training beendet',title:'Gut geübt',sub:bestTr?`Beste Form: ${nm(bestTr)} mit Ø ${avg[bestTr]}`:'Keine Handstände erkannt.'}
+      :tie?{color:'var(--soft)',fg:'var(--ink)',initial:'=',kicker:'Gleichstand',title:'Unentschieden',sub:'Gleicher Durchschnitt an der Spitze'}
+      :!winner?{color:'var(--soft)',fg:'var(--ink)',initial:'–',kicker:'Noch keine Wertung',title:'Kein Ergebnis',sub:'Keine gewerteten Handstände erkannt.'}
+      :{color:col(winner),fg:fgc(winner),initial:ini(winner),kicker:'Tagessieg',title:nm(winner),sub:`Ø ${avg[winner]} · ${tot[winner]} Punkte gesamt`};
+    const ordIds=counted.map(a=>a.id);
+    const vidBtn=a=>{const del=b.videosDeleted&&!isFav(a.id);return {deleted:del,vidOp:del?0.3:1,vidIcon:del?'—':(isFav(a.id)?'★':'▶'),onVideo:()=>!del&&this.setState({screen:'video',video:{id:a.id,t:0,playing:true,back:'end'}})};};
+    const assign=(id,to)=>this.setState(st=>({swapOpen:null,battle:{...st.battle,attempts:st.battle.attempts.map(a=>a.id===id?{...a,player:to}:a)}}));
+    const statIds=[...b.players].sort((x,y)=>avg[y]-avg[x]);
+    const endLists=statIds.map(id=>({name:nm(id),color:col(id),count:`${per[id].length} gewertet`,rows:per[id].map(a=>({n:ordIds.indexOf(a.id)+1,score:a.score,time:f1(a.time),
+      steps:a.steps===0?'keine Schritte':a.steps===1?'1 Schritt':`${a.steps} Schritte`,note:a.errors.length?[...new Set(a.errors.map(e=>e.label))].join(', '):'Sauber',
+      swapOpen:s.swapOpen===a.id,swapBg:s.swapOpen===a.id?'var(--soft)':'transparent',onSwapToggle:()=>this.setState(st=>({swapOpen:st.swapOpen===a.id?null:a.id})),
+      targets:b.players.filter(x=>x!==id).map(x=>({name:nm(x),color:col(x),onClick:()=>assign(a.id,x)})),...vidBtn(a)}))}));
+    const warmList=b.attempts.filter(a=>a.warm),nFav=b.attempts.filter(a=>isFav(a.id)).length;
+    // video
+    let vid={},vidSk=pose('stand');
+    if(s.video){const a=this.find(s.video.id);if(a){const dur=a.time+1.6,t=s.video.t,ht=t-0.8;
+      const near=labs=>a.errors.some(e=>labs.includes(e.label)&&Math.abs(e.t-ht)<0.7);
+      if(ht>=0&&ht<=a.time){const amp=(100-a.sub.ruhe)/100*10+(near(['Starkes Wackeln'])?9:0),hs=a.errors.filter(e=>e.label==='Handschritt'&&e.t<ht).length*7;
+        vidSk=pose('hand',{sw:Math.sin(t*2.4)*amp,arch:near(['Hüfte knickt ab','Hohlkreuz'])?16:0,split:near(['Beine auseinander'])?22:2,knee:near(['Knie gebeugt'])?14:0,hs});}
+      const errNow=a.errors.find(e=>Math.abs(e.t-ht)<0.6),fav=isFav(a.id);
+      vid={name:nm(a.player),color:col(a.player),warm:a.warm,score:a.score,scoreLabel:a.warm?'Probe':'Punkte',
+        sub:`${dShort(a.date)} · ${f1(a.time)} s gehalten${a.warm?' · Aufwärmen':''}`,tStr:f1(t),durStr:f1(dur),pct:t/dur*100,playIcon:s.video.playing?'❚❚':'▶',errNow:errNow?errNow.label:'',
+        star:fav?'★':'☆',favBg:fav?'var(--ink)':'transparent',favFg:fav?'var(--bg)':'var(--ink)',favBorder:fav?'var(--ink)':'var(--line)',
+        markers:a.errors.map(e=>({left:(0.8+e.t)/dur*100})),noErrors:!a.errors.length,
+        errors:a.errors.map(e=>({t:f1(0.8+e.t),label:e.label,border:errNow===e?'var(--ink)':'var(--line)',onClick:()=>this.setState(st=>({video:{...st.video,t:Math.max(0,0.8+e.t-0.4),playing:true}}))})),
+        bars:SUBS.map(([k,l])=>({label:l,val:a.sub[k]}))};
+      this._vid={a,dur};}}
+    // history
+    const H=s.history,n=H.length,X=i=>26+i*(290/Math.max(1,n-1)),Y=v=>150-(clamp(v,40,100)-40)/60*140;
+    const hp=R.map(p=>p.id).filter(id=>H.some(h=>h.avg[id]!=null));
+    const chart={grid:[50,70,90].map(v=>({y:Y(v),pct:Y(v)/178*100,v})),
+      lines:hp.map(id=>({color:col(id),pts:H.map((h,i)=>h.avg[id]!=null?`${X(i)},${Y(h.avg[id])}`:null).filter(Boolean).join(' ')})),
+      dots:hp.flatMap(id=>H.map((h,i)=>h.avg[id]!=null?{x:X(i),y:Y(h.avg[id]),c:col(id)}:null).filter(Boolean)),
+      legend:hp.map(id=>({name:nm(id),color:col(id)})),first:dShort(H[0].date),lastD:dShort(H[n-1].date)};
+    const histRows=[...H].reverse().map(h=>({wd:WD[h.date.getDay()],d:dShort(h.date),winner:h.winner?nm(h.winner):'Unentschieden',color:h.winner?col(h.winner):'var(--soft)',fg:h.winner?fgc(h.winner):'var(--ink)',initial:h.winner?ini(h.winner):'=',count:h.count,
+      chips:[...h.players].sort((x,y)=>h.avg[y]-h.avg[x]).map(id=>({name:nm(id),color:col(id),avg:h.avg[id]}))}));
+    const gallery=s.favorites.map(a=>({name:nm(a.player),color:col(a.player),score:a.score,time:f1(a.time),date:dShort(a.date),warm:a.warm,onClick:()=>this.setState({screen:'video',video:{id:a.id,t:0,playing:true,back:'history'}})}));
+    const wsum=SUBS.reduce((x,[k])=>x+set.weights[k],0)||1;
+    return {
+      isPortrait:s.screen!=='camera',isCamera:s.screen==='camera',isHome:s.screen==='home',isSetup:s.screen==='setup',isEnd:s.screen==='end',isVideo:s.screen==='video'&&!!s.video,isHistory:s.screen==='history',isSettings:s.screen==='settings',
+      screenLabel:labels[s.screen]||'',toast:s.toast,ranking,leaderText,last,
+      toggleTheme:()=>this.setState(st=>({theme:st.theme==='dark'?'light':'dark'})),
+      goHome:()=>this.setState({screen:'home',swapOpen:null}),goSettings:()=>this.setState(st=>({screen:'settings',settingsBack:st.screen})),
+      backFromSettings:()=>this.setState(st=>({screen:st.settingsBack==='settings'?'home':st.settingsBack})),
+      goSetup:()=>this.setState(st=>({screen:'setup',editing:null,adding:false,setup:{...st.setup,mode:st.setup.mode==='training'?'battle':st.setup.mode}})),
+      goTraining:()=>this.setState(st=>({screen:'setup',editing:null,adding:false,setup:{...st.setup,mode:'training'}})),
+      goHistory:()=>this.setState({screen:'history',histTab:'tage'}),
+      openLast:()=>this.setState({screen:lsrc.unsaved||b.saved?'end':'history'}),
+      setupTitle:s.setup.mode==='training'?'Training vorbereiten':'Battle vorbereiten',
+      selCountText:`${sel.length} ausgewählt`,rosterRows,
+      adding:s.adding,notAdding:!s.adding,newName:s.newName,onNewName:e=>this.setState({newName:e.target.value}),
+      newSwatches:sw(newColor,R.map(p=>p.color),k=>this.setState({newColor:k})),
+      startAdd:()=>this.setState({adding:true,editing:null,newName:''}),cancelAdd:()=>this.setState({adding:false}),
+      cantAdd:!s.newName.trim(),addOp:s.newName.trim()?1:0.4,
+      confirmAdd:()=>{const name=s.newName.trim();if(!name)return;const id='p'+Date.now();
+        this.setState(st=>({roster:[...st.roster,{id,name,color:newColor}],adding:false,newName:'',setup:{...st.setup,sel:[...st.setup.sel,id]}}));},
+      starterOpts,orderText:order.length?order.map(nm).join(' → ')+' → …':'–',
+      modeOpts,isProfiMode:s.setup.mode==='profi',
+      guide:[{n:1,text:'Handy quer auf einen Stuhl stellen – etwa 1 m hoch.'},{n:2,text:'3–4 m Abstand, Kamera filmt von der Seite.'},{n:3,text:'Ganzer Körper im Bild: Hände bis Füße. Danach nicht mehr anfassen.'}],
+      cantStart:sel.length<2,startOp:sel.length<2?0.4:1,startLabel:sel.length<2?'Mindestens 2 Personen auswählen':'Kamera starten',
+      startCamera:()=>{if(sel.length<2)return;this.setState(st=>({screen:'camera',prevBattle:st.battle,showWarm:false,swapOpen:null,
+        battle:{mode:st.setup.mode,players:[...sel],order,attempts:[],saved:false,videosDeleted:false,date:new Date(2026,9,23)},cam:{phase:'ready',t:0,turn:0,warm:true}}));},
+      camSk,cam,res,
+      startBattleNow:()=>this.setState(st=>({cam:{...st.cam,warm:false,flash:1.4}})),
+      skipResult:()=>this.setState(st=>({cam:{...st.cam,phase:'ready',t:0,turn:st.cam.turn+1}})),
+      endBattle:()=>this.setState({screen:'end',cam:null}),
+      exitCamera:()=>this.setState(st=>st.battle.attempts.length?{screen:'end',cam:null}:{screen:'home',cam:null,battle:st.prevBattle||st.battle}),
+      endTitle:isTr?'Training-Ende':'Battle-Ende',endDate:`${dLong(b.date)} · ${({battle:'Battle',training:'Training',profi:'Profi'})[b.mode]}`,
+      hero,endStats:statIds.map(id=>({name:nm(id),color:col(id),avg:avg[id],total:tot[id],count:per[id].length})),endLists,
+      warmCount:warmList.length,showWarm:s.showWarm,warmChevron:s.showWarm?'▲':'▼',toggleWarm:()=>this.setState(st=>({showWarm:!st.showWarm})),
+      warmRows:warmList.map(a=>({name:nm(a.player),color:col(a.player),time:f1(a.time),score:a.score,...vidBtn(a)})),
+      storageNote:b.videosDeleted?`Videos wurden gelöscht.${nFav?' '+nFav+' Favorit'+(nFav>1?'en':'')+' in der Galerie.':''}`:`Mit ⇄ lässt sich ein Versuch einer anderen Person zuordnen, falls das Abwechseln falsch erkannt wurde. Beim Speichern werden alle Videos gelöscht – außer Favoriten ★${nFav?' ('+nFav+')':''}.`,
+      saveLabel:b.saved?'Zurück zum Start':'Speichern & fertig',
+      saveBattle:()=>{if(b.saved){this.setState({screen:'home'});return;}
+        const del=b.attempts.filter(a=>!isFav(a.id)).length;
+        this.setState(st=>{const up={battle:{...st.battle,saved:true,videosDeleted:true},screen:'home',swapOpen:null};
+          if(!isTr&&counted.length){up.history=[...st.history,{date:b.date,players:scored,avg:{...avg},winner:winner||null,count:counted.length}];if(winner)up.wins={...st.wins,[winner]:(st.wins[winner]||0)+1};}
+          return up;});
+        this.toast(isTr?`Training beendet · ${del} Videos gelöscht.`:winner?`Sieg für ${nm(winner)}. ${del} Videos gelöscht${nFav?', '+nFav+' Favorit behalten':''}.`:`Gespeichert · ${del} Videos gelöscht.`);},
+      vid,vidSk,
+      backFromVideo:()=>this.setState(st=>({screen:st.video&&st.video.back||'end',video:null})),
+      togglePlay:()=>this.setState(st=>{const v=st.video,a=this.find(v.id),dur=a.time+1.6;return {video:{...v,playing:!v.playing,t:!v.playing&&v.t>=dur?0:v.t}};}),
+      seek:e=>{const r=e.currentTarget.getBoundingClientRect(),p=clamp((e.clientX-r.left)/r.width,0,1);if(this._vid)this.setState(st=>({video:{...st.video,t:p*this._vid.dur}}));},
+      toggleFav:()=>{const a=this._vid&&this._vid.a;if(!a)return;const on=isFav(a.id);
+        this.setState(st=>({favorites:on?st.favorites.filter(f=>f.id!==a.id):[{...a},...st.favorites]}));this.toast(on?'Aus der Galerie entfernt':'In der Galerie gespeichert ★');},
+      histTabs:seg(s.histTab,[['tage','Tage',()=>this.setState({histTab:'tage'})],['galerie',`Galerie (${s.favorites.length})`,()=>this.setState({histTab:'galerie'})]]),
+      isTabDays:s.histTab==='tage',isTabGallery:s.histTab==='galerie',chart,histRows,gallery,galleryEmpty:!gallery.length,
+      stepOpts:[['erlaubt','Erlaubt','Handschritte haben keinen Einfluss.'],['abzug','Punktabzug pro Schritt','Jeder Schritt kostet Punkte bei „Handschritte“.'],['ende','Versuch endet','Beim ersten Schritt stoppt die Haltezeit.']].map(([v,label,desc])=>({label,desc,dot:set.stepRule===v?1:0,onClick:()=>setSet({stepRule:v})})),
+      isAbzug:set.stepRule==='abzug',penalty:set.penalty,onPenalty:e=>setSet({penalty:+e.target.value}),
+      strictOpts:seg(set.strict,[[1,'Locker',()=>setSet({strict:1})],[2,'Normal',()=>setSet({strict:2})],[3,'Streng',()=>setSet({strict:3})]]),
+      strictDesc:['Kleine Fehler werden verziehen – gut für den Anfang.','Ausgewogen für den täglichen Vergleich.','Jede Abweichung kostet deutlich Punkte.'][set.strict-1]+' Der Profi-Modus bewertet zusätzlich strenger.',
+      weightRows:SUBS.map(([k,l])=>({label:l,val:set.weights[k],share:Math.round(set.weights[k]/wsum*100),onChange:e=>{const v=+e.target.value;setSet({weights:{...this.state.set.weights,[k]:v}});}})),
+      themeOpts:seg(s.theme,[['light','Hell',()=>this.setState({theme:'light'})],['dark','Dunkel',()=>this.setState({theme:'dark'})]])
+    };
+  }
+}
+</script>
+</body>
+</html>
