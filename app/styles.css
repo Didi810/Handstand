@@ -176,6 +176,7 @@ input[type=range]{width:100%;accent-color:var(--ink)}
 .cam-rec{display:flex;align-items:center;gap:6px;font-size:calc(11 * var(--u));color:#c9cbd3}
 .cam-rec .d{width:8px;height:8px;border-radius:50%;background:#ff4b4b;animation:hbPulse 1.2s infinite}
 .cam-x{width:calc(40 * var(--u));height:calc(40 * var(--u));min-width:36px;min-height:36px;border-radius:12px;border:1px solid #3a3c46;background:rgba(0,0,0,.4);color:#fff;font-size:15px}
+.cam-pill{height:calc(40 * var(--u));min-height:36px;padding:0 calc(14 * var(--u));border-radius:12px;border:1px solid #4a4c56;background:rgba(0,0,0,.5);color:#fff;font-weight:600;font-size:calc(14 * var(--u));white-space:nowrap}
 .cam-avg{display:flex;align-items:center;gap:calc(10 * var(--u))}
 .cam-avg .n{font-weight:600;color:#e4e6ec}
 .cam-avg b{font-weight:800;line-height:1;font-variant-numeric:tabular-nums;min-width:calc(56 * var(--u));text-align:right}

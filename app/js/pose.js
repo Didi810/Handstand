@@ -5,25 +5,38 @@
 const MP = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
 const MODEL = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task';
 
-let landmarkerPromise = null;
+let libPromise = null;
+let useCpu = false; // wird gesetzt, wenn die Grafikeinheit (GPU) Probleme macht
 
-export function loadPose() {
-  if (!landmarkerPromise) {
-    landmarkerPromise = (async () => {
-      const { FilesetResolver, PoseLandmarker } = await import(`${MP}/vision_bundle.mjs`);
-      const files = await FilesetResolver.forVisionTasks(`${MP}/wasm`);
-      const opts = d => ({
-        baseOptions: { modelAssetPath: MODEL, delegate: d },
-        runningMode: 'VIDEO', numPoses: 1,
-        minPoseDetectionConfidence: 0.5, minPosePresenceConfidence: 0.5, minTrackingConfidence: 0.5,
-      });
-      try { return await PoseLandmarker.createFromOptions(files, opts('GPU')); }
-      catch (e) { console.warn('GPU nicht verfügbar, nutze CPU', e); return await PoseLandmarker.createFromOptions(files, opts('CPU')); }
+function lib() {
+  if (!libPromise) {
+    libPromise = (async () => {
+      const mod = await import(`${MP}/vision_bundle.mjs`);
+      const files = await mod.FilesetResolver.forVisionTasks(`${MP}/wasm`);
+      return { PoseLandmarker: mod.PoseLandmarker, files };
     })();
-    landmarkerPromise.catch(() => { landmarkerPromise = null; });
+    libPromise.catch(() => { libPromise = null; });
   }
-  return landmarkerPromise;
+  return libPromise;
 }
+
+// Erstellt jedes Mal eine frische KI. Eine alte kann kaputt sein, wenn die App im Hintergrund war
+// (das Handy gibt dann die Grafikeinheit frei) – deshalb nie eine alte wiederverwenden.
+export async function loadPose() {
+  const { PoseLandmarker, files } = await lib();
+  const opts = d => ({
+    baseOptions: { modelAssetPath: MODEL, delegate: d },
+    runningMode: 'VIDEO', numPoses: 1,
+    minPoseDetectionConfidence: 0.5, minPosePresenceConfidence: 0.5, minTrackingConfidence: 0.5,
+  });
+  if (!useCpu) {
+    try { return await PoseLandmarker.createFromOptions(files, opts('GPU')); }
+    catch (e) { console.warn('GPU nicht verfügbar, nutze CPU', e); useCpu = true; }
+  }
+  return await PoseLandmarker.createFromOptions(files, opts('CPU'));
+}
+// Nach wiederholten Fehlern mit der GPU auf CPU umschalten
+export function preferCpu() { useCpu = true; }
 
 export class PoseRunner {
   constructor(landmarker) {
@@ -31,7 +44,9 @@ export class PoseRunner {
     this.canvas = document.createElement('canvas');
     this.ctx = this.canvas.getContext('2d', { willReadFrequently: false });
     this.flip = false; this.miss = 0; this.lastTs = 0;
+    this.errors = 0; this.broken = false;
   }
+  close() { try { this.lm.close(); } catch { } }
   detect(video, now) {
     const vw = video.videoWidth, vh = video.videoHeight;
     if (!vw || !vh) return null;
@@ -43,7 +58,8 @@ export class PoseRunner {
     c.drawImage(video, 0, 0, w, h);
     const ts = Math.max(now, this.lastTs + 1); this.lastTs = ts;
     let res;
-    try { res = this.lm.detectForVideo(this.canvas, ts); } catch (e) { console.warn(e); return null; }
+    try { res = this.lm.detectForVideo(this.canvas, ts); this.errors = 0; }
+    catch (e) { console.warn(e); if (++this.errors >= 10) this.broken = true; return null; }
     const raw = res && res.landmarks && res.landmarks[0];
     if (!raw) {
       if (++this.miss >= 4) { this.flip = !this.flip; this.miss = 0; }

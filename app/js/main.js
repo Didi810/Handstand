@@ -1,7 +1,7 @@
 // Handstand Battle – App-Logik und alle Bildschirme
 import { SUBS, TIPS, DEF_SET, MIN_HOLD, clamp, scoreOf } from './scoring.js';
 import { frameMetrics, AttemptTracker, KEEP } from './analysis.js';
-import { loadPose, PoseRunner, DemoSource } from './pose.js';
+import { loadPose, preferCpu, PoseRunner, DemoSource } from './pose.js';
 import { ClipRecorder, fixDuration } from './recorder.js';
 import { loadData, saveData, favAll, favPut, favDel, favClear } from './store.js';
 
@@ -321,18 +321,14 @@ async function startCamera() {
   try {
     let stream;
     if (DEMO) { CAM.demo = new DemoSource(); stream = CAM.demo.stream(); }
-    else {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('nocam');
-      stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: S.set.camera, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } } });
-    }
+    else stream = await getStream();
     if (session !== CAM.session) { stream.getTracks().forEach(t => t.stop()); return; }
     CAM.stream = stream;
-    video.srcObject = stream;
-    await Promise.race([video.play().catch(() => { }), new Promise(r => setTimeout(r, 1500))]);
+    await attachStream(video, stream);
     if (!DEMO) {
       S.cam.loadingText = 'KI wird geladen … beim ersten Mal kann das etwas dauern.'; renderCamUI(true);
       const lm = await loadPose();
-      if (session !== CAM.session) return;
+      if (session !== CAM.session) { try { lm.close(); } catch { } return; }
       CAM.runner = new PoseRunner(lm);
     }
     CAM.rec = new ClipRecorder(stream); CAM.rec.start();
@@ -353,10 +349,65 @@ async function startCamera() {
   }
 }
 
+async function getStream() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('nocam');
+  return navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: S.set.camera, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } } });
+}
+async function attachStream(video, stream) {
+  const mirror = S.set.camera === 'user' && !DEMO;
+  video.classList.toggle('mirror', mirror);
+  $('#camsk')?.classList.toggle('mirror', mirror);
+  video.srcObject = stream;
+  await Promise.race([video.play().catch(() => { }), new Promise(r => setTimeout(r, 1500))]);
+}
+
+// KI neu starten (z. B. wenn sie nach dem Zurückkehren in die App nichts mehr erkennt)
+async function restartPose(reason) {
+  if (DEMO || CAM.restarting || !CAM.tracker) return;
+  CAM.restarting = true;
+  const session = CAM.session;
+  if (reason === 'error') preferCpu();
+  const old = CAM.runner; CAM.runner = null;
+  if (old) old.close();
+  try {
+    const lm = await loadPose();
+    if (session !== CAM.session) { try { lm.close(); } catch { } return; }
+    CAM.runner = new PoseRunner(lm);
+  } catch (e) { console.error(e); toast('Die KI konnte nicht neu gestartet werden. Bitte Kamera schließen und neu öffnen.'); }
+  finally { CAM.restarting = false; }
+}
+
+// Kamera wechseln (vorne ↔ hinten) oder nach dem Hintergrund neu verbinden – das Battle läuft weiter
+async function restartStream() {
+  if (DEMO || !CAM.tracker || CAM.switching) return;
+  CAM.switching = true;
+  const session = CAM.session, video = $('#camv');
+  try {
+    if (CAM.pending) await closeClip(false);
+    if (CAM.rec) CAM.rec.dispose();
+    if (CAM.stream) CAM.stream.getTracks().forEach(t => t.stop());
+    const stream = await getStream();
+    if (session !== CAM.session) { stream.getTracks().forEach(t => t.stop()); return; }
+    CAM.stream = stream;
+    await attachStream(video, stream);
+    CAM.rec = new ClipRecorder(stream); CAM.rec.start(); CAM.frames = [];
+    CAM.tracker.reset();
+    if (S.cam.phase === 'active') S.cam.phase = 'ready';
+  } catch (e) { console.error(e); toast('Die Kamera konnte nicht gewechselt werden.'); }
+  finally { CAM.switching = false; }
+}
+
 async function requestWake() {
   try { CAM.wake = await navigator.wakeLock?.request('screen'); } catch { }
 }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S.screen === 'camera' && CAM.stream) requestWake(); });
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible' || S.screen !== 'camera' || !CAM.tracker) return;
+  requestWake();
+  // Nach dem Hintergrund: Kamera und KI frisch verbinden
+  const ended = !CAM.stream || CAM.stream.getVideoTracks().some(t => t.readyState === 'ended');
+  if (ended) restartStream(); else $('#camv')?.play().catch(() => { });
+  restartPose();
+});
 
 function loop(now) {
   if (S.screen !== 'camera' || !S.cam || !CAM.tracker) return;
@@ -368,7 +419,13 @@ function loop(now) {
   if (!video) return;
   let pts = null;
   if (DEMO) pts = CAM.demo.pose(now);
-  else if (video.readyState >= 2) pts = CAM.runner.detect(video, now);
+  else if (CAM.runner && video.readyState >= 2) {
+    pts = CAM.runner.detect(video, now);
+    if (CAM.runner.broken) restartPose('error');
+  }
+  // Sicherheitsnetz: 6 s lang gar kein Körper → KI frisch starten (höchstens alle 20 s)
+  if (pts || !CAM.lastPose) CAM.lastPose = now;
+  if (!DEMO && now - CAM.lastPose > 6000 && now - (CAM.lastRestart || 0) > 20000) { CAM.lastRestart = now; CAM.lastPose = now; restartPose(); }
   const vw = DEMO ? 1280 : video.videoWidth, vh = DEMO ? 720 : video.videoHeight;
   const m = frameMetrics(pts, vw / (vh || 1));
   CAM.lastM = m;
@@ -439,10 +496,11 @@ async function stopCamera() {
   if (CAM.pending) await closeClip(false);
   if (CAM.rec) CAM.rec.dispose();
   if (CAM.stream) CAM.stream.getTracks().forEach(t => t.stop());
+  if (CAM.runner) CAM.runner.close();
   try { await CAM.wake?.release(); } catch { }
   try { screen.orientation?.unlock?.(); } catch { }
   try { if (document.fullscreenElement) await document.exitFullscreen(); } catch { }
-  Object.assign(CAM, { stream: null, rec: null, tracker: null, runner: null, demo: null, wake: null, frames: [] });
+  Object.assign(CAM, { stream: null, rec: null, tracker: null, runner: null, demo: null, wake: null, frames: [], lastPose: 0, lastRestart: 0, restarting: false, switching: false });
 }
 
 function renderCamUI(force) {
@@ -468,16 +526,20 @@ function renderCamUI(force) {
       <div class="cam-left">
         <div class="cam-banner${c.warm ? '' : ' live'}"><span class="d"></span>${c.warm ? 'Aufwärmen · zählt nicht' : (isTr ? 'Training läuft' : 'Battle läuft')}</div>
         <span class="cam-k" style="margin-top:${u(10)}">Dran</span>
-        <div class="cam-name"><span class="stripe" style="background:${col(cur)}"></span><span>${esc(nm(cur))}</span></div>
+        <div class="cam-name"><span class="stripe" style="background:${col(cur)}"></span><span style="font-size:${u(nm(cur).length <= 6 ? 68 : nm(cur).length <= 9 ? 50 : 40)}">${esc(nm(cur))}</span></div>
         <div class="cam-timer"><b>${f1(timer)}</b><span>s</span></div>
         <span class="cam-count">${curWarm ? `Probe ${Math.max(1, warmN)}` : `Handstand ${Math.max(1, liveN)}`} · ${phaseLabel}</span>
         <span class="cam-state">${dot(c.body ? 'oklch(0.75 0.17 150)' : 'oklch(0.7 0.17 60)', 10)}${c.body ? 'Körper erkannt' : 'Ganzer Körper nicht im Bild'}</span>
       </div>
       <div class="cam-right">
-        <div class="row gap8"><span class="cam-rec mono"><span class="d"></span>REC</span><button class="cam-x" data-a="exitCamera">✕</button></div>
+        <div class="row gap8"><span class="cam-rec mono"><span class="d"></span>REC</span>
+          ${DEMO ? '' : `<button class="cam-pill" data-a="switchCam" title="Kamera wechseln">⇄ ${S.set.camera === 'user' ? 'Hauptkamera' : 'Selfie-Kamera'}</button>`}
+          <button class="cam-x" data-a="exitCamera">✕</button></div>
         <span class="cam-k" style="margin-top:4px;font-size:${u(14)}">Ø aktuell</span>
         ${b.players.map(id => `<div class="cam-avg">${dot(col(id), 10)}<span class="n" style="font-size:${u(nameSize)}">${esc(nm(id))}</span><b style="font-size:${u(avgSize)}">${st.per[id].length ? st.avg[id] : '–'}</b></div>`).join('')}
-        <div class="cam-next"><span class="cam-k" style="font-size:${u(14)}">Als Nächstes</span><b><i style="background:${col(nx)}"></i>${esc(nm(nx))}</b></div>
+        <div class="cam-next">
+          ${n > 1 && c.phase !== 'active' ? `<button class="cam-pill" style="margin-bottom:${u(10)}" data-a="skipTurn">⏭ ${esc(nm(cur))} überspringen</button>` : ''}
+          <span class="cam-k" style="font-size:${u(14)}">Als Nächstes</span><b><i style="background:${col(nx)}"></i>${esc(nm(nx))}</b></div>
       </div>
       ${c.warm ? `<button class="cam-start" data-a="startBattleNow">${isTr ? 'Training startet jetzt' : 'Battle startet jetzt'}</button>`
         : `<button class="cam-end" data-a="endBattle">${isTr ? 'Training beenden' : 'Battle beenden'}</button>`}
@@ -873,6 +935,17 @@ const A = {
   startCamera: () => startCamera(),
   // Kamera
   startBattleNow: () => { S.cam.warm = false; S.cam.flash = performance.now() + 1400; renderCamUI(true); },
+  skipTurn: () => {
+    const c = S.cam; if (!c || c.phase === 'active' || c.phase === 'loading') return;
+    if (CAM.tracker) CAM.tracker.reset();
+    c.phase = 'ready'; c.turn++; renderCamUI(true);
+  },
+  switchCam: async () => {
+    S.set = { ...S.set, camera: S.set.camera === 'user' ? 'environment' : 'user' };
+    persist(); renderCamUI(true);
+    await restartStream();
+    renderCamUI(true);
+  },
   skipResult: () => { if (S.cam.phase === 'result') { S.cam.phase = 'ready'; S.cam.turn++; renderCamUI(true); } },
   endBattle: async () => {
     // Läuft gerade noch ein Handstand, wird er noch gewertet
