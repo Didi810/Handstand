@@ -1,11 +1,11 @@
 // Handstand Battle – App-Logik und alle Bildschirme
-import { SUBS, TIPS, DEF_SET, MIN_HOLD, clamp, scoreOf, counts } from './scoring.js?v=8';
-import { frameMetrics, AttemptTracker, KEEP } from './analysis.js?v=8';
-import { loadPose, preferCpu, PoseRunner, DemoSource } from './pose.js?v=8';
-import { ClipRecorder, fixDuration } from './recorder.js?v=8';
-import { loadData, saveData, favAll, favPut, favDel, favClear } from './store.js?v=8';
+import { SUBS, TIPS, DEF_SET, MIN_HOLD, clamp, scoreOf, counts } from './scoring.js?v=9';
+import { frameMetrics, AttemptTracker, KEEP } from './analysis.js?v=9';
+import { loadPose, preferCpu, PoseRunner, DemoSource } from './pose.js?v=9';
+import { ClipRecorder, fixDuration } from './recorder.js?v=9';
+import { loadData, saveData, favAll, favPut, favDel, favClear } from './store.js?v=9';
 
-const VERSION = 8; // bei jeder Änderung hochzählen, auch die ?v= in index.html und den imports
+const VERSION = 9; // bei jeder Änderung hochzählen, auch die ?v= in index.html und den imports
 const DEMO = new URLSearchParams(location.search).has('demo');
 // Eingebaute Browser von WhatsApp, Instagram & Co. dürfen oft nicht auf die Kamera zugreifen
 const UA = navigator.userAgent || '';
@@ -13,6 +13,9 @@ const IN_APP = /Instagram|FBAN|FBAV|FB_IAB|Snapchat|Line\/|musical_ly|BytedanceW
 const CAM_OK = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
 const IS_IOS = /iPhone|iPad|iPod/i.test(UA);
 const APP_URL = location.origin + location.pathname;
+// iPhone + Safari + https, aber keine Kamera-Schnittstelle → fast immer der Blockierungsmodus (Lockdown Mode)
+const LOCKDOWN = IS_IOS && !IN_APP && !CAM_OK && window.isSecureContext;
+const LOCKDOWN_HINT = 'Auf diesem iPhone ist wahrscheinlich der Blockierungsmodus an – der verbietet Webseiten die Kamera. So nimmst du nur diese Seite aus: in Safari links in der Adressleiste auf „aA“ (bzw. das Seiten-Symbol) tippen → „Website-Einstellungen“ → „Blockierungsmodus“ ausschalten → Seite neu laden.';
 function browserHint() {
   return IS_IOS ? 'Öffne den Link in Safari: oben oder unten auf ⋯ bzw. das Teilen-Symbol tippen → „In Safari öffnen“.'
     : 'Öffne den Link in Chrome: oben rechts auf ⋮ tippen → „Im Browser öffnen“ bzw. „In Chrome öffnen“.';
@@ -154,9 +157,10 @@ function homeHtml() {
     </div>
     ${DEMO ? '<div class="pill" style="align-self:flex-start">Demo-Modus · simulierte Kamera</div>' : ''}
     ${!DEMO && (IN_APP || !CAM_OK) ? `<div class="card col gap8" style="border-color:var(--err)">
-      <span style="font-weight:700;font-size:16px">⚠ Bitte im richtigen Browser öffnen</span>
-      <span style="font-size:14px;line-height:1.45">${IN_APP ? 'Du hast den Link wohl direkt in einer App wie WhatsApp oder Instagram geöffnet. Deren eingebauter Browser darf die Kamera meist nicht benutzen.' : 'Dieser Browser kann die Kamera nicht benutzen.'} ${browserHint()}</span>
-      <div class="row gap8" style="flex-wrap:wrap"><button class="btn-small" data-a="copyLink">Link kopieren</button><span class="mono small" style="word-break:break-all">${esc(APP_URL)}</span></div>
+      <span style="font-weight:700;font-size:16px">${LOCKDOWN ? '⚠ Kamera ist blockiert' : '⚠ Bitte im richtigen Browser öffnen'}</span>
+      <span style="font-size:14px;line-height:1.45">${LOCKDOWN ? LOCKDOWN_HINT
+        : (IN_APP ? 'Du hast den Link wohl direkt in einer App wie WhatsApp oder Instagram geöffnet. Deren eingebauter Browser darf die Kamera meist nicht benutzen. ' : 'Dieser Browser kann die Kamera nicht benutzen. ') + browserHint()}</span>
+      ${LOCKDOWN ? '' : `<div class="row gap8" style="flex-wrap:wrap"><button class="btn-small" data-a="copyLink">Link kopieren</button><span class="mono small" style="word-break:break-all">${esc(APP_URL)}</span></div>`}
     </div>` : ''}
     <div class="card col gap14">
       <div class="between"><span class="label">Siege gesamt</span><span style="font-size:13px;font-weight:600;color:var(--muted)">${leaderText}</span></div>
@@ -362,7 +366,7 @@ async function startCamera() {
     go('setup');
     toast(e.message === 'nocam'
       ? (!window.isSecureContext ? 'Kamera nicht verfügbar: Die App muss über https:// geöffnet werden.'
-        : 'Dieser Browser darf die Kamera nicht benutzen. ' + (IN_APP ? browserHint() : 'Woran es liegt, zeigt ⚙︎ Einstellungen → „Kamera-Check starten“.'))
+        : LOCKDOWN ? LOCKDOWN_HINT : 'Dieser Browser darf die Kamera nicht benutzen. ' + (IN_APP ? browserHint() : 'Woran es liegt, zeigt ⚙︎ Einstellungen → „Kamera-Check starten“.'))
       : e.name === 'NotAllowedError' ? (IN_APP ? 'Kein Zugriff auf die Kamera. ' + browserHint()
         : 'Kein Zugriff auf die Kamera. Bitte die Kamera für diese Seite erlauben – Hilfe unter ⚙︎ Einstellungen → „Kamera-Check starten“.')
         : 'Die Kamera oder KI konnte nicht gestartet werden. Internetverbindung prüfen und nochmal versuchen.');
@@ -973,7 +977,7 @@ async function runDiag() {
   } else if (IS_IOS) {
     const major = parseInt(iosV, 10);
     out.push(['Tipp', major && major < 15 ? `iOS ${iosV} ist zu alt – bitte das iPhone aktualisieren (Einstellungen → Allgemein → Softwareupdate).`
-      : IN_APP ? browserHint() : 'Link in Safari öffnen (nicht in einer anderen App). Prüfen: Einstellungen → Bildschirmzeit → Beschränkungen → Kamera erlaubt? Und: ist der Blockierungsmodus (Lockdown Mode) aus?', null]);
+      : IN_APP ? browserHint() : LOCKDOWN ? LOCKDOWN_HINT : 'Link in Safari öffnen (nicht in einer anderen App). Prüfen: Einstellungen → Bildschirmzeit → Beschränkungen → Kamera erlaubt? Und: ist der Blockierungsmodus (Lockdown Mode) aus?', null]);
   }
   S.diag = out;
   if (S.screen === 'settings') render();

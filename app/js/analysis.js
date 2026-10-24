@@ -1,6 +1,6 @@
 // Wertet die erkannten Körperpunkte aus: erkennt Anfang/Ende eines Handstands,
 // misst Körperlinie, Beine, Ruhe und Handschritte und merkt sich Fehler mit Zeitpunkt.
-import { clamp, zeitScore, schritteScore } from './scoring.js?v=8';
+import { clamp, zeitScore, schritteScore } from './scoring.js?v=9';
 
 // MediaPipe-Punktnummern
 export const LM = { nose: 0, earL: 7, earR: 8, shL: 11, shR: 12, elL: 13, elR: 14, wrL: 15, wrR: 16, hipL: 23, hipR: 24, knL: 25, knR: 26, anL: 27, anR: 28 };
