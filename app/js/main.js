@@ -1,5 +1,5 @@
 // Handstand Battle – App-Logik und alle Bildschirme
-import { SUBS, TIPS, DEF_SET, MIN_HOLD, clamp, scoreOf } from './scoring.js';
+import { SUBS, TIPS, DEF_SET, MIN_HOLD, clamp, scoreOf, counts } from './scoring.js';
 import { frameMetrics, AttemptTracker, KEEP } from './analysis.js';
 import { loadPose, preferCpu, PoseRunner, DemoSource } from './pose.js';
 import { ClipRecorder, fixDuration } from './recorder.js';
@@ -200,7 +200,7 @@ function setupHtml() {
       </div></div>`
     : `<button class="addbtn" data-a="startAdd"><span class="addbox">+</span>Person hinzufügen</button>`;
   const ord = order();
-  const modes = [['battle', 'Battle', 'Vor allem die Haltezeit zählt, dazu etwas Form – am Ende gibt es einen Tagessieg.'], ['training', 'Training', 'Nur die Form zählt, dazu Verbesserungstipps.'], ['profi', 'Profi', 'Eigene Gewichtung, strengere Bewertung.']];
+  const modes = [['battle', 'Battle', 'Nur die Haltezeit zählt – wer im Schnitt länger hält, gewinnt den Tag.'], ['training', 'Training', 'Nur die Form zählt, dazu Verbesserungstipps.'], ['profi', 'Profi', 'Eigene Gewichtung, strengere Bewertung.']];
   const enough = sel.length >= minPlayers();
   return `<div class="col" style="min-height:100vh;min-height:100dvh">
     <div class="head"><button class="iconbtn" data-a="goHome">←</button><span class="head-title">${S.setup.mode === 'training' ? 'Training vorbereiten' : 'Battle vorbereiten'}</span></div>
@@ -590,7 +590,8 @@ function resultHtml(a, isTr) {
     </div>
     <div class="res-r">
       <div class="res-top"><span>${f1(a.time)} s</span><span style="color:#c9cbd3">${a.steps === 0 ? 'keine Handschritte' : plural(a.steps, 'Handschritt', 'Handschritte')}</span></div>
-      ${SUBS.map(([k, l]) => { const off = isTr && k === 'zeit'; return `<div class="res-bar"><span>${l}</span><div><div style="background:${col(a.player)};width:${a.sub[k]}%;opacity:${off ? 0.25 : 1}"></div></div><b>${off ? '–' : a.sub[k]}</b></div>`; }).join('')}
+      ${SUBS.map(([k, l]) => { const off = !counts(k, a.mode, S.set); return `<div class="res-bar"><span>${l}</span><div><div style="background:${col(a.player)};width:${a.sub[k]}%;opacity:${off ? 0.25 : 1}"></div></div><b style="opacity:${off ? 0.4 : 1}">${a.sub[k]}</b></div>`; }).join('')}
+      ${a.mode === 'battle' ? '<span class="res-tip" style="color:#a9abb5">Im Battle zählt nur die Haltezeit – die Form siehst du nur zur Info.</span>' : ''}
       ${isTr && u.length ? `<div class="col" style="gap:4px;margin-top:4px">${u.map(l => `<span class="res-tip"><b>${l}:</b> <span>${TIPS[l]}</span></span>`).join('')}</div>` : ''}
     </div>
     <div class="res-prog" id="resProg" style="background:${col(a.player)};width:100%"></div>
@@ -729,9 +730,10 @@ function renderVideo() {
     </div>
     <div class="card row" style="padding:16px;border-radius:18px;gap:16px">
       <div class="col" style="align-items:center;width:80px;flex:none"><span style="font-weight:800;font-size:54px;line-height:1">${a.score}</span><span style="font-size:12.5px;font-weight:600;color:var(--muted)">${a.warm ? 'Probe' : 'Punkte'}</span></div>
-      <div class="col" style="flex:1;gap:7px">${SUBS.map(([k, l]) => `<div class="col" style="gap:3px">
+      <div class="col" style="flex:1;gap:7px">${SUBS.map(([k, l]) => `<div class="col" style="gap:3px;opacity:${counts(k, a.mode, S.set) ? 1 : 0.45}">
         <div class="row" style="justify-content:space-between;font-size:12.5px;font-weight:500"><span>${l}</span><span class="tnum" style="font-weight:600">${a.sub[k]}</span></div>
-        <div style="height:5px;border-radius:3px;background:var(--soft)"><div style="height:5px;border-radius:3px;background:${col(a.player)};width:${a.sub[k]}%"></div></div></div>`).join('')}</div>
+        <div style="height:5px;border-radius:3px;background:var(--soft)"><div style="height:5px;border-radius:3px;background:${col(a.player)};width:${a.sub[k]}%"></div></div></div>`).join('')}
+        ${a.mode === 'battle' ? '<span style="font-size:12px;color:var(--muted)">Im Battle zählt nur die Haltezeit.</span>' : ''}</div>
     </div>
   </div></div>`;
   if (v) setupPlayer(a, dur, pre);
@@ -881,12 +883,12 @@ function historyHtml() {
 function settingsHtml() {
   const set = S.set, wsum = SUBS.reduce((x, [k]) => x + set.weights[k], 0) || 1;
   const seg = (cur, opts, action, cols) => `<div class="seg" style="grid-template-columns:repeat(${cols},1fr)">${opts.map(([v, l]) => `<button class="${cur === v ? 'on' : ''}" data-a="${action}" data-v="${v}">${l}</button>`).join('')}</div>`;
-  const steps = [['erlaubt', 'Erlaubt', 'Handschritte haben keinen Einfluss.'], ['abzug', 'Punktabzug pro Schritt', 'Jeder Schritt kostet Punkte bei „Handschritte“.'], ['ende', 'Versuch endet', 'Beim ersten Schritt stoppt die Haltezeit.']];
+  const steps = [['erlaubt', 'Erlaubt', 'Handschritte haben keinen Einfluss.'], ['abzug', 'Punktabzug pro Schritt', 'Jeder Schritt kostet Punkte (nur Training und Profi).'], ['ende', 'Versuch endet', 'Beim ersten Schritt stoppt die Haltezeit.']];
   const strictDesc = ['Kleine Fehler werden verziehen – gut für den Anfang.', 'Ausgewogen für den täglichen Vergleich.', 'Jede Abweichung kostet deutlich Punkte.'][set.strict - 1] + ' Der Profi-Modus bewertet zusätzlich strenger.';
   return `<div class="pad" style="padding:10px 20px 32px;gap:20px">
     <div class="row gap12"><button class="iconbtn" data-a="backFromSettings">←</button><span class="head-title">Einstellungen</span></div>
     <div class="col gap8"><span class="label">Darstellung</span>${seg(S.theme, [['light', 'Hell'], ['dark', 'Dunkel']], 'theme', 2)}</div>
-    <div class="col gap8"><span class="label">Handschritte</span>
+    <div class="col gap8"><div class="between"><span class="label">Handschritte</span><span style="font-size:12.5px;color:var(--muted)">im Battle wirkt nur „Versuch endet“</span></div>
       <div class="card-tight">${steps.map(([v, l, d]) => `<button class="opt${set.stepRule === v ? ' on' : ''}" data-a="stepRule" data-v="${v}"><span class="radio"><span></span></span><span class="col" style="gap:2px"><span style="font-weight:600;font-size:15.5px">${l}</span><span style="font-size:13px;color:var(--muted)">${d}</span></span></button>`).join('')}
         ${set.stepRule === 'abzug' ? `<div class="col" style="padding:12px 14px 14px;gap:6px">
           <div class="row" style="justify-content:space-between;font-size:14px;font-weight:500"><span>Abzug pro Schritt</span><span style="font-weight:700;font-size:18px" id="penVal">−${set.penalty}</span></div>
