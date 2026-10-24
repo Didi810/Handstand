@@ -6,6 +6,16 @@ import { ClipRecorder, fixDuration } from './recorder.js';
 import { loadData, saveData, favAll, favPut, favDel, favClear } from './store.js';
 
 const DEMO = new URLSearchParams(location.search).has('demo');
+// Eingebaute Browser von WhatsApp, Instagram & Co. dürfen oft nicht auf die Kamera zugreifen
+const UA = navigator.userAgent || '';
+const IN_APP = /Instagram|FBAN|FBAV|FB_IAB|Snapchat|Line\/|musical_ly|BytedanceWebview|TikTok|WhatsApp|Twitter|LinkedInApp|GSA\/|; wv\)/i.test(UA);
+const CAM_OK = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+const IS_IOS = /iPhone|iPad|iPod/i.test(UA);
+const APP_URL = location.origin + location.pathname;
+function browserHint() {
+  return IS_IOS ? 'Öffne den Link in Safari: oben oder unten auf ⋯ bzw. das Teilen-Symbol tippen → „In Safari öffnen“.'
+    : 'Öffne den Link in Chrome: oben rechts auf ⋮ tippen → „Im Browser öffnen“ bzw. „In Chrome öffnen“.';
+}
 
 const PAL = {
   rot: { c: 'oklch(0.6 0.16 30)', fg: '#fff', l: 'Rot' }, blau: { c: 'oklch(0.56 0.14 258)', fg: '#fff', l: 'Blau' },
@@ -106,7 +116,7 @@ function toast(msg) {
   if (!el) { el = document.createElement('div'); el.id = 'toast'; el.className = 'toast'; document.body.appendChild(el); }
   el.textContent = msg; el.style.display = 'block';
   el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
-  clearTimeout(toastT); toastT = setTimeout(() => { el.style.display = 'none'; }, 3800);
+  clearTimeout(toastT); toastT = setTimeout(() => { el.style.display = 'none'; }, Math.min(9000, 2500 + msg.length * 45));
 }
 
 // ---------- 01 Start ----------
@@ -142,6 +152,11 @@ function homeHtml() {
       <div class="row gap8"><button class="iconbtn" data-a="toggleTheme" title="Hell / Dunkel">◐</button><button class="iconbtn" data-a="goSettings" title="Einstellungen" style="font-size:20px">⚙︎</button></div>
     </div>
     ${DEMO ? '<div class="pill" style="align-self:flex-start">Demo-Modus · simulierte Kamera</div>' : ''}
+    ${!DEMO && (IN_APP || !CAM_OK) ? `<div class="card col gap8" style="border-color:var(--err)">
+      <span style="font-weight:700;font-size:16px">⚠ Bitte im richtigen Browser öffnen</span>
+      <span style="font-size:14px;line-height:1.45">${IN_APP ? 'Du hast den Link wohl direkt in einer App wie WhatsApp oder Instagram geöffnet. Deren eingebauter Browser darf die Kamera meist nicht benutzen.' : 'Dieser Browser kann die Kamera nicht benutzen.'} ${browserHint()}</span>
+      <div class="row gap8" style="flex-wrap:wrap"><button class="btn-small" data-a="copyLink">Link kopieren</button><span class="mono small" style="word-break:break-all">${esc(APP_URL)}</span></div>
+    </div>` : ''}
     <div class="card col gap14">
       <div class="between"><span class="label">Siege gesamt</span><span style="font-size:13px;font-weight:600;color:var(--muted)">${leaderText}</span></div>
       ${ranking.map((p, i) => `<div class="rank">
@@ -344,8 +359,11 @@ async function startCamera() {
     await stopCamera();
     S.battle = S.prevBattle; S.cam = null;
     go('setup');
-    toast(e.message === 'nocam' ? 'Kamera nicht verfügbar. Die App muss über https geöffnet werden.'
-      : e.name === 'NotAllowedError' ? 'Kein Zugriff auf die Kamera. Bitte in den Browser-Einstellungen erlauben.'
+    toast(e.message === 'nocam'
+      ? (!window.isSecureContext ? 'Kamera nicht verfügbar: Die App muss über https:// geöffnet werden.'
+        : 'Dieser Browser darf die Kamera nicht benutzen. ' + browserHint())
+      : e.name === 'NotAllowedError' ? (IN_APP ? 'Kein Zugriff auf die Kamera. ' + browserHint()
+        : 'Kein Zugriff auf die Kamera. Bitte in den Einstellungen des Handys/Browsers die Kamera für diese Seite erlauben.')
         : 'Die Kamera oder KI konnte nicht gestartet werden. Internetverbindung prüfen und nochmal versuchen.');
   }
 }
@@ -958,6 +976,10 @@ const A = {
   startCamera: () => startCamera(),
   // Kamera
   startBattleNow: () => { S.cam.warm = false; S.cam.flash = performance.now() + 1400; renderCamUI(true); },
+  copyLink: async () => {
+    try { await navigator.clipboard.writeText(APP_URL); toast('Link kopiert – jetzt in Safari bzw. Chrome einfügen.'); }
+    catch { prompt('Link kopieren:', APP_URL); }
+  },
   skipTurn: () => {
     const c = S.cam; if (!c || c.phase === 'active' || c.phase === 'loading') return;
     if (CAM.tracker) CAM.tracker.reset();
