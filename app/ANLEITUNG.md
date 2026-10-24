@@ -7,7 +7,7 @@ Eine Web-App, die im Handy-Browser läuft. Sie filmt euch von der Seite, erkennt
 - `index.html`, `styles.css`: Seite und Aussehen (nach dem Claude-Design v2)
 - `js/main.js`: alle Bildschirme und der Battle-Ablauf
 - `js/analysis.js`: misst Körperlinie, Beine, Ruhe, Handschritte und erkennt Fehler
-- `js/scoring.js`: Punkte-Regeln (Gewichtung, Strenge, Haltezeit 10 s = 100)
+- `js/scoring.js`: Punkte-Regeln (Gewichtung, Strenge, Haltezeit zählt im Battle 60 %, 5 s ≈ 57 Zeitpunkte, 10 s ≈ 81)
 - `js/pose.js`: KI-Körpererkennung und Demo-Simulation
 - `js/recorder.js`: Videoaufnahme ohne Ton
 - `js/store.js`: Speichern (Verlauf im Browser, Favoriten-Videos in IndexedDB)

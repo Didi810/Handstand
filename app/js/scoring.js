@@ -4,7 +4,7 @@ export const SUBS = [['zeit', 'Haltezeit'], ['linie', 'Körperlinie'], ['beine',
 
 // Gewichtung je Modus (Profi: eigene Gewichtung aus den Einstellungen)
 export const W = {
-  battle: { zeit: 30, linie: 20, beine: 20, ruhe: 15, schritte: 15 },
+  battle: { zeit: 60, linie: 10, beine: 10, ruhe: 10, schritte: 10 },
   training: { zeit: 0, linie: 35, beine: 30, ruhe: 20, schritte: 15 },
 };
 
@@ -42,6 +42,7 @@ export function scoreOf(sub, mode, set) {
   return Math.round(100 * Math.pow(r / 100, ex));
 }
 
-// Haltezeit: 10 Sekunden = 100 Punkte
-export const zeitScore = t => Math.round(clamp(t * 10));
+// Haltezeit: steigt am Anfang schnell, später langsamer – längeres Halten bringt aber immer mehr.
+// 3 s ≈ 39 · 5 s ≈ 57 · 10 s ≈ 81 · 15 s ≈ 92 · 20 s ≈ 96 · 30 s ≈ 99
+export const zeitScore = t => Math.round(clamp(100 * (1 - Math.exp(-t / 6))));
 export const schritteScore = (steps, set) => set.stepRule === 'abzug' ? clamp(100 - steps * set.penalty) : 100;

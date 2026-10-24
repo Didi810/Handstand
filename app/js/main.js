@@ -200,7 +200,7 @@ function setupHtml() {
       </div></div>`
     : `<button class="addbtn" data-a="startAdd"><span class="addbox">+</span>Person hinzufügen</button>`;
   const ord = order();
-  const modes = [['battle', 'Battle', 'Zeit und Form zählen – am Ende gibt es einen Tagessieg.'], ['training', 'Training', 'Nur die Form zählt, dazu Verbesserungstipps.'], ['profi', 'Profi', 'Eigene Gewichtung, strengere Bewertung.']];
+  const modes = [['battle', 'Battle', 'Vor allem die Haltezeit zählt, dazu etwas Form – am Ende gibt es einen Tagessieg.'], ['training', 'Training', 'Nur die Form zählt, dazu Verbesserungstipps.'], ['profi', 'Profi', 'Eigene Gewichtung, strengere Bewertung.']];
   const enough = sel.length >= minPlayers();
   return `<div class="col" style="min-height:100vh;min-height:100dvh">
     <div class="head"><button class="iconbtn" data-a="goHome">←</button><span class="head-title">${S.setup.mode === 'training' ? 'Training vorbereiten' : 'Battle vorbereiten'}</span></div>
@@ -252,6 +252,7 @@ function renderCamera() {
       <canvas class="sk${S.set.camera === 'user' && !DEMO ? ' mirror' : ''}" id="camsk"></canvas>
       <div class="shade-l"></div><div class="shade-r"></div>
       <div id="camui"></div>
+      <div id="camfx"></div>
       <div class="rotate"><div class="ico">⟳</div><b style="font-size:22px">Handy quer drehen</b><span style="color:#a9abb5">Die Kamera-Ansicht funktioniert im Querformat am besten.</span><button class="cam-end" style="position:static;transform:none" data-a="exitCamera">Abbrechen</button></div>
     </div>`;
   }
@@ -506,7 +507,7 @@ async function stopCamera() {
 function renderCamUI(force) {
   const ui = $('#camui'); if (!ui || !S.cam) return;
   const c = S.cam, b = S.battle, st = stats(b), isTr = st.isTr;
-  let html;
+  let html, timerTxt = null;
   if (c.phase === 'loading') {
     html = `<div class="loading"><div class="spinner"></div><b style="font-size:20px">${esc(c.loadingText)}</b>
       <span style="color:#a9abb5;max-width:420px">Alles läuft auf diesem Handy – das Video wird nicht ins Internet hochgeladen.</span>
@@ -527,7 +528,7 @@ function renderCamUI(force) {
         <div class="cam-banner${c.warm ? '' : ' live'}"><span class="d"></span>${c.warm ? 'Aufwärmen · zählt nicht' : (isTr ? 'Training läuft' : 'Battle läuft')}</div>
         <span class="cam-k" style="margin-top:${u(10)}">Dran</span>
         <div class="cam-name"><span class="stripe" style="background:${col(cur)}"></span><span style="font-size:${u(nm(cur).length <= 6 ? 68 : nm(cur).length <= 9 ? 50 : 40)}">${esc(nm(cur))}</span></div>
-        <div class="cam-timer"><b>${f1(timer)}</b><span>s</span></div>
+        <div class="cam-timer"><b id="camTimer"></b><span>s</span></div>
         <span class="cam-count">${curWarm ? `Probe ${Math.max(1, warmN)}` : `Handstand ${Math.max(1, liveN)}`} · ${phaseLabel}</span>
         <span class="cam-state">${dot(c.body ? 'oklch(0.75 0.17 150)' : 'oklch(0.7 0.17 60)', 10)}${c.body ? 'Körper erkannt' : 'Ganzer Körper nicht im Bild'}</span>
       </div>
@@ -544,21 +545,41 @@ function renderCamUI(force) {
       ${c.warm ? `<button class="cam-start" data-a="startBattleNow">${isTr ? 'Training startet jetzt' : 'Battle startet jetzt'}</button>`
         : `<button class="cam-end" data-a="endBattle">${isTr ? 'Training beenden' : 'Battle beenden'}</button>`}
       ${c.msg ? `<div class="cam-msg">${esc(c.msg)}</div>` : ''}
-      ${c.flash ? `<div class="cam-flash"><span>Los geht's</span></div>` : ''}
-      ${S.set.debug && CAM.lastM ? debugHtml() : ''}
-      ${c.phase === 'result' && lastA ? resultHtml(lastA, isTr, c) : ''}`;
+      ${S.set.debug ? '<div class="cam-debug mono" id="camDbg"></div>' : ''}`;
+    timerTxt = f1(timer);
   }
+  // Nur neu bauen, wenn sich wirklich etwas geändert hat – sonst flackert es
   if (force || ui._html !== html) { ui.innerHTML = html; ui._html = html; }
+  const tEl = $('#camTimer'); if (tEl && timerTxt != null && tEl.textContent !== timerTxt) tEl.textContent = timerTxt;
+  const dEl = $('#camDbg'); if (dEl && CAM.lastM) dEl.textContent = debugText();
+  renderCamFx();
 }
 
-function debugHtml() {
+// Einblendungen über dem Kamerabild („Los geht's“, Ergebnis) – werden nur einmal gebaut,
+// danach wird nur der Fortschrittsbalken bewegt.
+function renderCamFx() {
+  const fx = $('#camfx'); if (!fx || !S.cam) return;
+  const c = S.cam, b = S.battle;
+  const lastA = c.last ? b.attempts.find(a => a.id === c.last) : null;
+  const showRes = c.phase === 'result' && lastA;
+  const key = showRes ? 'res:' + lastA.id : c.flash ? 'flash' : '';
+  if (fx._key !== key) {
+    fx._key = key;
+    fx.innerHTML = showRes ? resultHtml(lastA, b.mode === 'training') : c.flash ? `<div class="cam-flash"><span>Los geht's</span></div>` : '';
+  }
+  if (showRes) {
+    const p = $('#resProg');
+    if (p) p.style.width = Math.max(0, 100 - (performance.now() - c.resAt) / 4500 * 100) + '%';
+  }
+}
+
+function debugText() {
   const m = CAM.lastM, r = CAM.runner;
-  const t = m.ok ? `Hüfte ${m.hipDev.toFixed(0)}°  Schulter ${m.shDev.toFixed(0)}°  Knie ${m.kneeDev.toFixed(0)}°  Beine ${m.sep.toFixed(2)}  Achse ${m.axis.toFixed(0)}°\nkopfüber ${m.inverted ? 'ja' : 'nein'}  Schritte ${CAM.tracker.steps}` : 'kein Körper';
-  return `<div class="cam-debug mono">${esc(t)}  ${Math.round(CAM.fps)} fps${r ? (r.flip ? '  ⟲' : '') : ''}</div>`;
+  const t = m.ok ? `Hüfte ${m.hipDev.toFixed(0)}°  Schulter ${m.shDev.toFixed(0)}°  Knie ${m.kneeDev.toFixed(0)}°  Beine ${m.sep.toFixed(2)}  Achse ${m.axis.toFixed(0)}°\nkopfüber ${m.inverted ? 'ja' : 'nein'}  Schritte ${CAM.tracker ? CAM.tracker.steps : 0}` : 'kein Körper';
+  return `${t}  ${Math.round(CAM.fps)} fps${r && r.flip ? '  ⟲' : ''}`;
 }
 
-function resultHtml(a, isTr, c) {
-  const left = Math.max(0, 100 - (performance.now() - c.resAt) / 4500 * 100);
+function resultHtml(a, isTr) {
   const u = [...new Set(a.errors.map(e => e.label))].slice(0, 2);
   return `<div class="res" data-a="skipResult">
     <div class="res-l">
@@ -572,7 +593,7 @@ function resultHtml(a, isTr, c) {
       ${SUBS.map(([k, l]) => { const off = isTr && k === 'zeit'; return `<div class="res-bar"><span>${l}</span><div><div style="background:${col(a.player)};width:${a.sub[k]}%;opacity:${off ? 0.25 : 1}"></div></div><b>${off ? '–' : a.sub[k]}</b></div>`; }).join('')}
       ${isTr && u.length ? `<div class="col" style="gap:4px;margin-top:4px">${u.map(l => `<span class="res-tip"><b>${l}:</b> <span>${TIPS[l]}</span></span>`).join('')}</div>` : ''}
     </div>
-    <div class="res-prog" style="background:${col(a.player)};width:${Math.round(left)}%"></div>
+    <div class="res-prog" id="resProg" style="background:${col(a.player)};width:100%"></div>
   </div>`;
 }
 
