@@ -1,10 +1,11 @@
 // Handstand Battle – App-Logik und alle Bildschirme
-import { SUBS, TIPS, DEF_SET, MIN_HOLD, clamp, scoreOf, counts } from './scoring.js';
-import { frameMetrics, AttemptTracker, KEEP } from './analysis.js';
-import { loadPose, preferCpu, PoseRunner, DemoSource } from './pose.js';
-import { ClipRecorder, fixDuration } from './recorder.js';
-import { loadData, saveData, favAll, favPut, favDel, favClear } from './store.js';
+import { SUBS, TIPS, DEF_SET, MIN_HOLD, clamp, scoreOf, counts } from './scoring.js?v=8';
+import { frameMetrics, AttemptTracker, KEEP } from './analysis.js?v=8';
+import { loadPose, preferCpu, PoseRunner, DemoSource } from './pose.js?v=8';
+import { ClipRecorder, fixDuration } from './recorder.js?v=8';
+import { loadData, saveData, favAll, favPut, favDel, favClear } from './store.js?v=8';
 
+const VERSION = 8; // bei jeder Änderung hochzählen, auch die ?v= in index.html und den imports
 const DEMO = new URLSearchParams(location.search).has('demo');
 // Eingebaute Browser von WhatsApp, Instagram & Co. dürfen oft nicht auf die Kamera zugreifen
 const UA = navigator.userAgent || '';
@@ -43,7 +44,7 @@ const S = {
   setup: saved.setup || { sel: ['p1', 'p2'], starter: 'p1', mode: 'battle' },
   editing: null, adding: false, newName: '', newColor: 'gelb',
   battle: null, prevBattle: null, cam: null, video: null,
-  histTab: 'tage', showWarm: false, swapOpen: null, settingsBack: 'home',
+  histTab: 'tage', showWarm: false, swapOpen: null, settingsBack: 'home', diag: null,
   favorites: [],
 };
 S.setup.sel = S.setup.sel.filter(id => S.roster.some(p => p.id === id));
@@ -361,9 +362,9 @@ async function startCamera() {
     go('setup');
     toast(e.message === 'nocam'
       ? (!window.isSecureContext ? 'Kamera nicht verfügbar: Die App muss über https:// geöffnet werden.'
-        : 'Dieser Browser darf die Kamera nicht benutzen. ' + browserHint())
+        : 'Dieser Browser darf die Kamera nicht benutzen. ' + (IN_APP ? browserHint() : 'Woran es liegt, zeigt ⚙︎ Einstellungen → „Kamera-Check starten“.'))
       : e.name === 'NotAllowedError' ? (IN_APP ? 'Kein Zugriff auf die Kamera. ' + browserHint()
-        : 'Kein Zugriff auf die Kamera. Bitte in den Einstellungen des Handys/Browsers die Kamera für diese Seite erlauben.')
+        : 'Kein Zugriff auf die Kamera. Bitte die Kamera für diese Seite erlauben – Hilfe unter ⚙︎ Einstellungen → „Kamera-Check starten“.')
         : 'Die Kamera oder KI konnte nicht gestartet werden. Internetverbindung prüfen und nochmal versuchen.');
   }
 }
@@ -923,13 +924,59 @@ function settingsHtml() {
     <div class="col gap8"><span class="label">Für Tüftler</span>
       <div class="card row" style="padding:14px;border-radius:18px;gap:12px"><span class="col" style="flex:1;gap:2px"><span style="font-weight:600;font-size:15.5px">Messwerte anzeigen</span><span style="font-size:13px;color:var(--muted)">Zeigt im Kamerabild die gemessenen Winkel – hilft beim Einstellen.</span></span>
         <button class="toggle${set.debug ? ' on' : ''}" data-a="debug" aria-label="Messwerte anzeigen"></button></div></div>
+    <div class="col gap8"><span class="label">Kamera geht nicht?</span>
+      <div class="card col gap10" style="padding:14px;border-radius:18px">
+        <span style="font-size:13.5px;line-height:1.45;color:var(--muted)">Der Check prüft Schritt für Schritt, woran es liegt. Mach bei Problemen einen Screenshot davon.</span>
+        <button class="btn-small" style="align-self:flex-start;height:40px" data-a="runDiag" ${S.diag === 'running' ? 'disabled' : ''}>${S.diag === 'running' ? 'Prüfe …' : 'Kamera-Check starten'}</button>
+        ${Array.isArray(S.diag) ? `<div class="col" style="gap:6px;font-size:13.5px">${S.diag.map(([l, v, ok]) => `<div class="row gap8" style="align-items:flex-start"><span style="flex:none;width:18px">${ok === true ? '✅' : ok === false ? '❌' : 'ℹ️'}</span><span style="flex:1"><b style="font-weight:600">${esc(l)}:</b> ${esc(v)}</span></div>`).join('')}</div>` : ''}
+      </div></div>
     <div style="background:var(--soft);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:6px;font-size:13.5px;line-height:1.45">
       <span style="font-weight:600;font-size:15px">Speicher & Datenschutz</span>
       <span>Videos werden ohne Ton aufgenommen und nur bis zum Ende des Battles zwischengespeichert. Favoriten ★ bleiben in der Galerie.</span>
       <span style="color:var(--muted)">Dauerhaft gespeichert: nur Siegerliste und Verlauf. Alles bleibt auf diesem Handy.</span>
     </div>
     <button class="link" style="align-self:flex-start;color:var(--muted)" data-a="resetAll">Verlauf und Favoriten löschen</button>
+    <span class="mono small" style="font-size:11px">Version ${VERSION}</span>
   </div>`;
+}
+
+// ---------- Kamera-Check ----------
+async function runDiag() {
+  S.diag = 'running'; render();
+  const out = [];
+  const iosV = (UA.match(/OS (\d+)_(\d+)/) || []).slice(1).join('.');
+  const browser = IN_APP ? 'eingebauter Browser einer App (WhatsApp, Instagram …)'
+    : /CriOS/.test(UA) ? 'Chrome auf iPhone' : /FxiOS/.test(UA) ? 'Firefox auf iPhone' : /EdgiOS/.test(UA) ? 'Edge auf iPhone'
+      : IS_IOS ? 'Safari' : /Chrome\//.test(UA) ? 'Chrome' : /Firefox\//.test(UA) ? 'Firefox' : 'unbekannt';
+  out.push(['App-Version', String(VERSION), null]);
+  out.push(['Gerät', IS_IOS ? `iPhone/iPad mit iOS ${iosV || '?'}` : (/Android ([\d.]+)/.exec(UA) || [, ''])[1] ? `Android ${(/Android ([\d.]+)/.exec(UA))[1]}` : 'Computer/anderes', null]);
+  out.push(['Browser', browser, IN_APP ? false : null]);
+  out.push(['Als Home-Bildschirm-App geöffnet', (navigator.standalone || matchMedia('(display-mode: standalone)').matches) ? 'ja' : 'nein', null]);
+  out.push(['Sichere Verbindung (https)', window.isSecureContext ? `ja (${location.protocol}//${location.host})` : `nein – Adresse ist ${location.protocol}//${location.host}`, window.isSecureContext]);
+  out.push(['Kamera-Schnittstelle vorhanden', CAM_OK ? 'ja' : 'nein – dieser Browser bietet der Seite keine Kamera an', CAM_OK]);
+  if (CAM_OK) {
+    try {
+      const st = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      const tr = st.getVideoTracks()[0], s = tr && tr.getSettings ? tr.getSettings() : {};
+      out.push(['Kamera-Test', `funktioniert (${s.width || '?'}×${s.height || '?'})`, true]);
+      st.getTracks().forEach(t => t.stop());
+    } catch (e) {
+      const why = {
+        NotAllowedError: 'Zugriff verweigert. iPhone: Einstellungen → Apps → Safari → Kamera → „Fragen“ oder „Erlauben“. Außerdem: Einstellungen → Bildschirmzeit → Beschränkungen → Kamera muss erlaubt sein.',
+        NotFoundError: 'Keine Kamera gefunden.',
+        NotReadableError: 'Die Kamera wird gerade von einer anderen App benutzt. Andere Apps schließen und nochmal versuchen.',
+        OverconstrainedError: 'Die Kamera unterstützt die Einstellungen nicht.',
+        SecurityError: 'Vom Browser aus Sicherheitsgründen blockiert.',
+      }[e.name] || (e.message || 'unbekannter Fehler');
+      out.push(['Kamera-Test', `${e.name || 'Fehler'}: ${why}`, false]);
+    }
+  } else if (IS_IOS) {
+    const major = parseInt(iosV, 10);
+    out.push(['Tipp', major && major < 15 ? `iOS ${iosV} ist zu alt – bitte das iPhone aktualisieren (Einstellungen → Allgemein → Softwareupdate).`
+      : IN_APP ? browserHint() : 'Link in Safari öffnen (nicht in einer anderen App). Prüfen: Einstellungen → Bildschirmzeit → Beschränkungen → Kamera erlaubt? Und: ist der Blockierungsmodus (Lockdown Mode) aus?', null]);
+  }
+  S.diag = out;
+  if (S.screen === 'settings') render();
 }
 
 // ---------- Aktionen ----------
@@ -976,6 +1023,7 @@ const A = {
   startCamera: () => startCamera(),
   // Kamera
   startBattleNow: () => { S.cam.warm = false; S.cam.flash = performance.now() + 1400; renderCamUI(true); },
+  runDiag: () => runDiag(),
   copyLink: async () => {
     try { await navigator.clipboard.writeText(APP_URL); toast('Link kopiert – jetzt in Safari bzw. Chrome einfügen.'); }
     catch { prompt('Link kopieren:', APP_URL); }
